@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net5.0</TargetFramework>
+        <RootNamespace>MongoTutorial.Business</RootNamespace>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\MongoTutorial.Core\MongoTutorial.Core.csproj" />
+      <ProjectReference Include="..\MongoTutorial.Data\MongoTutorial.Data.csproj" />
+      <ProjectReference Include="..\MongoTutorial.Domain\MongoTutorial.Domain.csproj" />
+    </ItemGroup>
+
+</Project>
