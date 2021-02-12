@@ -9,4 +9,9 @@
       <ProjectReference Include="..\MongoTutorial.Core\MongoTutorial.Core.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <PackageReference Include="FluentValidation.AspNetCore" Version="9.5.1" />
+      <PackageReference Include="Scrutor" Version="3.3.0" />
+    </ItemGroup>
+
 </Project>

@@ -8,7 +8,6 @@ namespace MongoTutorial.Domain
 
         public string Name { get; set; }
 
-        // change value type to nullable
-        public DateTime DateOfReceipt { get; set; }
+        public DateTime? DateOfReceipt { get; set; }
     }
 }

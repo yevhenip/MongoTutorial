@@ -2,71 +2,75 @@
 using MongoTutorial.Core.Interfaces.Repositories;
 using MongoTutorial.Core.Interfaces.Services;
 using MongoTutorial.Domain;
-using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
+using AutoMapper;
+using MongoTutorial.Core.Common;
 
 namespace MongoTutorial.Business.Services
 {
     public class ProductService : IProductService
     {
         private readonly IProductRepository _productRepository;
+        private readonly IMapper _mapper;
 
-        public ProductService(IProductRepository productRepository)
+        public ProductService(IProductRepository productRepository, IMapper mapper)
         {
             _productRepository = productRepository;
+            _mapper = mapper;
         }
 
-        public async Task<List<ProductDto>> GetProductsAsync()
+        public async Task<Result<List<ProductDto>>> GetProductsAsync()
         {
             var productsFromDb = await _productRepository.GetProductsAsync();
 
-            // Add Automapper
-            var products = productsFromDb.Select(p => new ProductDto(p.Id, p.Name, p.DateOfReceipt)).ToList();
-            return products;
+            var products = _mapper.Map<List<ProductDto>>(productsFromDb);
+            return Result<List<ProductDto>>.Success(products);
         }
 
-        public async Task<ProductDto> GetProductByIdAsync(string id)
+        public async Task<Result<ProductDto>> GetProductByIdAsync(string id)
         {
             var productFromDb = await _productRepository.GetProductByIdAsync(id);
+            if (productFromDb == null)
+            {
+                return Result<ProductDto>.Failure("productId", "Product doesn't exists");
+            }
 
-            // Add Automapper
-            // Throws exception if null
-            ProductDto product = new(productFromDb.Id, productFromDb.Name, productFromDb.DateOfReceipt);
-            return product;
+            var product = _mapper.Map<ProductDto>(productFromDb);
+
+            return Result<ProductDto>.Success(product);
         }
 
-        public async Task<ProductDto> CreateProductAsync(ProductDto product)
+        public async Task<Result<ProductDto>> CreateProductAsync(ProductDto product)
         {
-            // Add Automapper
-            Product productToDb = new()
-            {
-                Id = product.Id,
-                Name = product.Name,
-                DateOfReceipt = product.DateOfReceipt
-            };
-
+            var productToDb = _mapper.Map<Product>(product);
             await _productRepository.CreateProductAsync(productToDb);
-            return product;
+            return Result<ProductDto>.Success(product);
         }
 
-        public async Task UpdateProductAsync(ProductDto product)
+        public async Task<Result<ProductDto>> UpdateProductAsync(ProductDto product)
         {
-            // Add Automapper
-            Product productToDb = new()
+            var productFromDb = await _productRepository.GetProductByIdAsync(product.Id);
+            if (productFromDb == null)
             {
-                Id = product.Id,
-                Name = product.Name,
-                DateOfReceipt = product.DateOfReceipt
-            };
+                return Result<ProductDto>.Failure("productId", "Product doesn't exists");
+            }
 
+            var productToDb = _mapper.Map<Product>(product);
             await _productRepository.UpdateProductAsync(productToDb);
+            return Result<ProductDto>.Success(product);
         }
 
-        public async Task DeleteProductAsync(string id)
+        public async Task<Result<object>> DeleteProductAsync(string id)
         {
+            var productFromDb = await _productRepository.GetProductByIdAsync(id);
+            if (productFromDb == null)
+            {
+                return Result<object>.Failure("productId", "Product doesn't exists");
+            }
+
             await _productRepository.DeleteProductAsync(id);
+            return Result<object>.Success();
         }
     }
 }

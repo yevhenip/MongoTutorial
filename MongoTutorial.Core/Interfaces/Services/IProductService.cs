@@ -1,19 +1,20 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
+using MongoTutorial.Core.Common;
 using MongoTutorial.Core.Dtos;
 
 namespace MongoTutorial.Core.Interfaces.Services
 {
     public interface IProductService
     {
-        Task<List<ProductDto>> GetProductsAsync();
+        Task<Result<List<ProductDto>>> GetProductsAsync();
 
-        Task<ProductDto> GetProductByIdAsync(string id);
+        Task<Result<ProductDto>> GetProductByIdAsync(string id);
 
-        Task<ProductDto> CreateProductAsync(ProductDto product);
+        Task<Result<ProductDto>> CreateProductAsync(ProductDto product);
 
-        Task UpdateProductAsync(ProductDto product);
+        Task<Result<ProductDto>> UpdateProductAsync(ProductDto product);
 
-        Task DeleteProductAsync(string id);
+        Task<Result<object>> DeleteProductAsync(string id);
     }
 }

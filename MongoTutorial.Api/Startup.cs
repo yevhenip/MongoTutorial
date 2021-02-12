@@ -1,3 +1,4 @@
+using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -6,7 +7,7 @@ using Microsoft.Extensions.Hosting;
 using MongoDB.Driver;
 using MongoTutorial.Business.Services;
 using MongoTutorial.Core.Interfaces.Repositories;
-using MongoTutorial.Core.Interfaces.Services;
+using MongoTutorial.Core.MapperProfile.ProductProfile;
 using MongoTutorial.Data.Repositories;
 
 namespace MongoTutorial.Api
@@ -33,12 +34,27 @@ namespace MongoTutorial.Api
 
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddControllers();
+            services.AddControllers()
+                .AddFluentValidation(o =>
+                {
+                    o.RegisterValidatorsFromAssembly(typeof(Startup).Assembly);
+                    o.RunDefaultMvcValidationAfterFluentValidationExecutes = false;
+                });
 
-            // Scrutor - cool thing, take a look!
-            services.AddSingleton<IMongoClient, MongoClient>(_ => new MongoClient(Configuration["Data:ConnectionString"]));
-            services.AddScoped<IProductService, ProductService>();
-            services.AddScoped<IProductRepository, ProductRepository>();
+            services.AddAutoMapper(typeof(Startup).Assembly, typeof(ProductProfile).Assembly);
+            
+            services.Scan(sc =>
+                sc.FromAssemblies(typeof(IProductRepository).Assembly, typeof(ProductRepository).Assembly,
+                        typeof(ProductService).Assembly)
+                    .AddClasses(@class =>
+                        @class.Where(type =>
+                            !type.Name.StartsWith('I')
+                            && (type.Name.EndsWith("Repository") || type.Name.EndsWith("Service"))))
+                    .AsImplementedInterfaces().WithScopedLifetime()
+            );
+
+            services.AddSingleton<IMongoClient, MongoClient>(_ =>
+                new MongoClient(Configuration["Data:ConnectionString"]));
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
