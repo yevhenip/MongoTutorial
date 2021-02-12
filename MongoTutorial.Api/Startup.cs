@@ -14,11 +14,13 @@ namespace MongoTutorial.Api
     public class Startup
     {
         private IConfiguration Configuration { get; }
+
         private IWebHostEnvironment Environment { get; }
 
         public Startup(IWebHostEnvironment environment)
         {
             Environment = environment;
+
             var builder = new ConfigurationBuilder()
                 .SetBasePath(Environment.ContentRootPath)
                 .AddJsonFile("appsettings.json", true, true)
@@ -32,6 +34,8 @@ namespace MongoTutorial.Api
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddControllers();
+
+            // Scrutor - cool thing, take a look!
             services.AddSingleton<IMongoClient, MongoClient>(_ => new MongoClient(Configuration["Data:ConnectionString"]));
             services.AddScoped<IProductService, ProductService>();
             services.AddScoped<IProductRepository, ProductRepository>();

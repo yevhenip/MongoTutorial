@@ -9,6 +9,7 @@ namespace MongoTutorial.Core.Interfaces.Repositories
         Task<List<Product>> GetProductsAsync();
 
         Task<Product> GetProductByIdAsync(string id);
+
         Task CreateProductAsync(Product product);
 
         Task UpdateProductAsync(Product product);

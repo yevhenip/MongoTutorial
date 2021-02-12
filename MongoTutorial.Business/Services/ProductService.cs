@@ -1,11 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using MongoTutorial.Core.Dtos;
+﻿using MongoTutorial.Core.Dtos;
 using MongoTutorial.Core.Interfaces.Repositories;
 using MongoTutorial.Core.Interfaces.Services;
 using MongoTutorial.Domain;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace MongoTutorial.Business.Services
 {
@@ -21,6 +21,8 @@ namespace MongoTutorial.Business.Services
         public async Task<List<ProductDto>> GetProductsAsync()
         {
             var productsFromDb = await _productRepository.GetProductsAsync();
+
+            // Add Automapper
             var products = productsFromDb.Select(p => new ProductDto(p.Id, p.Name, p.DateOfReceipt)).ToList();
             return products;
         }
@@ -28,20 +30,37 @@ namespace MongoTutorial.Business.Services
         public async Task<ProductDto> GetProductByIdAsync(string id)
         {
             var productFromDb = await _productRepository.GetProductByIdAsync(id);
+
+            // Add Automapper
+            // Throws exception if null
             ProductDto product = new(productFromDb.Id, productFromDb.Name, productFromDb.DateOfReceipt);
             return product;
         }
 
         public async Task<ProductDto> CreateProductAsync(ProductDto product)
         {
-            Product productToDb = new() {Id = product.Id, Name = product.Name, DateOfReceipt = product.DateOfReceipt};
+            // Add Automapper
+            Product productToDb = new()
+            {
+                Id = product.Id,
+                Name = product.Name,
+                DateOfReceipt = product.DateOfReceipt
+            };
+
             await _productRepository.CreateProductAsync(productToDb);
             return product;
         }
 
         public async Task UpdateProductAsync(ProductDto product)
         {
-            Product productToDb = new() {Id = product.Id, Name = product.Name, DateOfReceipt = product.DateOfReceipt};
+            // Add Automapper
+            Product productToDb = new()
+            {
+                Id = product.Id,
+                Name = product.Name,
+                DateOfReceipt = product.DateOfReceipt
+            };
+
             await _productRepository.UpdateProductAsync(productToDb);
         }
 

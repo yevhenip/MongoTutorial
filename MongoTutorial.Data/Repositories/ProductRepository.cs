@@ -23,6 +23,7 @@ namespace MongoTutorial.Data.Repositories
 
         public Task<Product> GetProductByIdAsync(string id)
         {
+            // change to SingleOrDefaultAsync
             return _productCollection.Find(p => p.Id == id).SingleAsync();
         }
         

@@ -6,6 +6,8 @@ using MongoTutorial.Core.Interfaces.Services;
 
 namespace MongoTutorial.Api.Controllers.v1
 {
+    // Probably add some error handling middleware
+    // Rename to ProductsController
     public class ProductController : ApiControllerBase
     {
         private readonly IProductService _productService;
@@ -28,7 +30,9 @@ namespace MongoTutorial.Api.Controllers.v1
             var product = await _productService.GetProductByIdAsync(productId);
             if (product == null)
             {
-                return BadRequest("Product with such id not exists");
+                // If something is not found, better return NotFound("...")
+                // look up about BadRequest in the internet
+                return BadRequest("Product with such id does not exist");
             }
 
             return Ok(product);
@@ -37,7 +41,9 @@ namespace MongoTutorial.Api.Controllers.v1
         [HttpPost]
         public async Task<IActionResult> CreateProductAsync([FromBody] ProductDto product)
         {
+            // Move ID assignment to service/repo
             product.Id = Guid.NewGuid().ToString();
+            // Should we check that required fields are not empty/not null?
             await _productService.CreateProductAsync(product);
             return Ok(product);
         }
@@ -46,11 +52,16 @@ namespace MongoTutorial.Api.Controllers.v1
         public async Task<IActionResult> UpdateProductAsync([FromRoute] string productId, [FromBody] ProductDto product)
         {
             var productFromDb = await _productService.GetProductByIdAsync(productId);
+            // does this check make sense? Maybe better to handle not found?
             if (productFromDb.Id != productId)
             {
-                return BadRequest("Illegal specified id");
+                return BadRequest("Specified id is incorrect/not found");
             }
 
+            // Should we check that required fields are not empty/not null?
+            // FluentValidation
+
+            // create new request model (without id)
             product.Id = productId;
             await _productService.UpdateProductAsync(product);
             return Ok(product);
