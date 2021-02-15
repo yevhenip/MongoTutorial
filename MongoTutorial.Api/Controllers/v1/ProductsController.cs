@@ -1,7 +1,6 @@
 ﻿using System.Threading.Tasks;
 using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
-using MongoTutorial.Api.Extensions;
 using MongoTutorial.Api.Models.Product;
 using MongoTutorial.Core.Dtos;
 using MongoTutorial.Core.Interfaces.Services;
@@ -23,18 +22,14 @@ namespace MongoTutorial.Api.Controllers.v1
         public async Task<IActionResult> GetProductsAsync()
         {
             var result = await _productService.GetProductsAsync();
-            return result.Succeeded
-                ? Ok(result.ToApiResponse())
-                : BadRequest(result.ToApiError());
+            return Ok(result.Data);
         }
 
         [HttpGet("{productId}")]
         public async Task<IActionResult> GetProductByIdAsync([FromRoute] string productId)
         {
             var result = await _productService.GetProductByIdAsync(productId);
-            return result.Succeeded
-                ? Ok(result.ToApiResponse())
-                : BadRequest(result.ToApiError());
+            return Ok(result.Data);
         }
 
         [HttpPost]
@@ -42,9 +37,7 @@ namespace MongoTutorial.Api.Controllers.v1
         {
             var productToDb = _mapper.Map<ProductDto>(product);
             var result = await _productService.CreateProductAsync(productToDb);
-            return result.Succeeded
-                ? Ok(result.ToApiResponse())
-                : BadRequest(result.ToApiError());
+            return Ok(result.Data);
         }
 
         [HttpPut("{productId}")]
@@ -53,18 +46,14 @@ namespace MongoTutorial.Api.Controllers.v1
         {
             var productToDb = _mapper.Map<ProductDto>(product) with {Id = productId};
             var result = await _productService.UpdateProductAsync(productToDb);
-            return result.Succeeded
-                ? Ok(result.ToApiResponse())
-                : BadRequest(result.ToApiError());
+            return Ok(result.Data);
         }
 
         [HttpDelete("{productId}")]
         public async Task<IActionResult> DeleteProductAsync([FromRoute] string productId)
         {
             var result = await _productService.DeleteProductAsync(productId);
-            return result.Succeeded
-                ? Ok(result.ToApiResponse())
-                : BadRequest(result.ToApiError());
+            return Ok(result.Data);
         }
     }
 }

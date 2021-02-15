@@ -5,6 +5,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using MongoDB.Driver;
+using MongoTutorial.Api.Extensions;
 using MongoTutorial.Business.Services;
 using MongoTutorial.Core.Interfaces.Repositories;
 using MongoTutorial.Core.MapperProfile.ProductProfile;
@@ -42,7 +43,7 @@ namespace MongoTutorial.Api
                 });
 
             services.AddAutoMapper(typeof(Startup).Assembly, typeof(ProductProfile).Assembly);
-            
+
             services.Scan(sc =>
                 sc.FromAssemblies(typeof(IProductRepository).Assembly, typeof(ProductRepository).Assembly,
                         typeof(ProductService).Assembly)
@@ -64,6 +65,7 @@ namespace MongoTutorial.Api
                 app.UseDeveloperExceptionPage();
             }
 
+            app.UseMyExceptionHandler();
             app.UseHsts();
             app.UseRouting();
             app.UseEndpoints(endpoints => { endpoints.MapControllers(); });

@@ -3,6 +3,7 @@ using MongoTutorial.Core.Interfaces.Repositories;
 using MongoTutorial.Core.Interfaces.Services;
 using MongoTutorial.Domain;
 using System.Collections.Generic;
+using System.Net;
 using System.Threading.Tasks;
 using AutoMapper;
 using MongoTutorial.Core.Common;
@@ -33,7 +34,7 @@ namespace MongoTutorial.Business.Services
             var productFromDb = await _productRepository.GetProductByIdAsync(id);
             if (productFromDb == null)
             {
-                return Result<ProductDto>.Failure("productId", "Product doesn't exists");
+                throw Result<ProductDto>.Failure("productId", "Product doesn't exists", HttpStatusCode.BadRequest);
             }
 
             var product = _mapper.Map<ProductDto>(productFromDb);
@@ -53,7 +54,7 @@ namespace MongoTutorial.Business.Services
             var productFromDb = await _productRepository.GetProductByIdAsync(product.Id);
             if (productFromDb == null)
             {
-                return Result<ProductDto>.Failure("productId", "Product doesn't exists");
+                throw Result<ProductDto>.Failure("productId", "Product doesn't exists", HttpStatusCode.BadRequest);
             }
 
             var productToDb = _mapper.Map<Product>(product);
