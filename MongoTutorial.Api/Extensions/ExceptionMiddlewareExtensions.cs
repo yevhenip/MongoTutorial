@@ -1,9 +1,8 @@
-﻿using System.Net;
-using System.Text.Json;
-using Microsoft.AspNetCore.Builder;
+﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Http;
 using MongoTutorial.Api.Common;
+using System.Text.Json;
 
 namespace MongoTutorial.Api.Extensions
 {
@@ -17,22 +16,26 @@ namespace MongoTutorial.Api.Extensions
                 {
                     var contextResponse = context.Response;
                     contextResponse.ContentType = "application/json";
+
                     var result = context.Features.Get<IExceptionHandlerFeature>().Error;
                     var type = result.GetType();
+                    var status = contextResponse.StatusCode;
                     string response;
-                    var status = (HttpStatusCode) contextResponse.StatusCode;
+
                     if (!type.IsGenericType)
                     {
                         response = JsonSerializer.Serialize(new ApiError("unknown", result.Message, status));
-                        contextResponse.StatusCode = (int) status;
+                        contextResponse.StatusCode = status;
                         await contextResponse.WriteAsync(response);
                     }
 
                     var field = (string) type.GetProperty("Field")?.GetValue(result);
                     var error = (string) type.GetProperty("Message")?.GetValue(result);
-                    status = (HttpStatusCode) type.GetProperty("StatusCode").GetValue(result);
+
+                    status = (int) type.GetProperty("StatusCode").GetValue(result);
                     response = JsonSerializer.Serialize(new ApiError(field, error, status));
-                    contextResponse.StatusCode = (int) status;
+                    contextResponse.StatusCode = status;
+
                     await contextResponse.WriteAsync(response);
                 });
             });

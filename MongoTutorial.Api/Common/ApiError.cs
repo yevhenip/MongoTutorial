@@ -6,9 +6,9 @@ namespace MongoTutorial.Api.Common
     public class ApiError
     {
         public Dictionary<string, IEnumerable<string>> Errors { get; }
-        public HttpStatusCode Status { get; set; }
+        public int Status { get; set; }
 
-        public ApiError(string field, string error, HttpStatusCode status)
+        public ApiError(string field, string error, int status)
         {
             Errors = new Dictionary<string, IEnumerable<string>>
             {
