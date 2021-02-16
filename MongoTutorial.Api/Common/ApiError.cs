@@ -1,12 +1,11 @@
 ﻿using System.Collections.Generic;
-using System.Net;
 
 namespace MongoTutorial.Api.Common
 {
     public class ApiError
     {
         public Dictionary<string, IEnumerable<string>> Errors { get; }
-        public int Status { get; set; }
+        public int Status { get; }
 
         public ApiError(string field, string error, int status)
         {

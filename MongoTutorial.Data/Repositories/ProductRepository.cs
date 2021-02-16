@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using MongoDB.Driver;
 using MongoTutorial.Core.Interfaces.Repositories;
@@ -16,29 +17,35 @@ namespace MongoTutorial.Data.Repositories
             _productCollection = db.GetCollection<Product>("products");
         }
 
-        public Task<List<Product>> GetProductsAsync()
+        public Task<List<Product>> GetAllAsync()
         {
             return _productCollection.Find(_ => true).ToListAsync();
         }
 
-        public Task<Product> GetProductByIdAsync(string id)
+        public Task<Product> GetAsync(string id)
         {
             return _productCollection.Find(p => p.Id == id).SingleOrDefaultAsync();
         }
-        
+
         public Task CreateProductAsync(Product product)
         {
             return _productCollection.InsertOneAsync(product);
         }
 
-        public Task UpdateProductAsync(Product product)
+        public Task UpdateAsync(Product product)
         {
             return _productCollection.ReplaceOneAsync(p => p.Id == product.Id, product);
         }
 
-        public Task DeleteProductAsync(string id)
+        public Task DeleteAsync(string id)
         {
             return _productCollection.FindOneAndDeleteAsync(p => p.Id == id);
+        }
+
+        public Task<List<Product>> GetRangeByManufacturerId(string manufacturerId)
+        {
+            return _productCollection.Find(p => 
+                p.Manufacturers.Any(m => m.Id == manufacturerId)).ToListAsync();
         }
     }
 }

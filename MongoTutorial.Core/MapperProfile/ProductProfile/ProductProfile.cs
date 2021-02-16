@@ -14,15 +14,23 @@ namespace MongoTutorial.Core.MapperProfile.ProductProfile
                 .ForMember(p => p.Name, opt
                     => opt.MapFrom(p => p.Name))
                 .ForMember(p => p.DateOfReceipt, opt
-                    => opt.MapFrom(p => p.DateOfReceipt));
-            
+                    => opt.MapFrom(p => p.DateOfReceipt))
+                .ForMember(p => p.Manufacturers, opt
+                    => opt.MapFrom(p => p.Manufacturers))
+                .ForMember(p => p.User, opt
+                    => opt.MapFrom(p => p.User));
+
             CreateMap<Product, ProductDto>()
                 .ForMember(p => p.Id, opt
                     => opt.MapFrom(p => p.Id))
                 .ForMember(p => p.Name, opt
                     => opt.MapFrom(p => p.Name))
                 .ForMember(p => p.DateOfReceipt, opt
-                    => opt.MapFrom(p => p.DateOfReceipt));
+                    => opt.MapFrom(p => p.DateOfReceipt))
+                .ForMember(p => p.Manufacturers, opt
+                    => opt.MapFrom(p => p.Manufacturers))
+                .ForMember(p => p.User, opt
+                    => opt.MapFrom(p => p.User));
         }
     }
 }

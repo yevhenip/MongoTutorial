@@ -6,14 +6,16 @@ namespace MongoTutorial.Core.Interfaces.Repositories
 {
     public interface IProductRepository
     {
-        Task<List<Product>> GetProductsAsync();
+        Task<List<Product>> GetAllAsync();
 
-        Task<Product> GetProductByIdAsync(string id);
+        Task<Product> GetAsync(string id);
 
         Task CreateProductAsync(Product product);
 
-        Task UpdateProductAsync(Product product);
+        Task UpdateAsync(Product product);
 
-        Task DeleteProductAsync(string id);
+        Task DeleteAsync(string id);
+        
+        Task<List<Product>> GetRangeByManufacturerId(string manufacturerId);
     }
 }

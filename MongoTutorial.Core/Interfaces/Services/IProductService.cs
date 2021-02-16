@@ -7,14 +7,14 @@ namespace MongoTutorial.Core.Interfaces.Services
 {
     public interface IProductService
     {
-        Task<Result<List<ProductDto>>> GetProductsAsync();
+        Task<Result<List<ProductDto>>> GetAllAsync();
 
-        Task<Result<ProductDto>> GetProductByIdAsync(string id);
+        Task<Result<ProductDto>> GetAsync(string id);
+        
+        Task<Result<ProductDto>> CreateAsync(ProductDto product, List<string> manufacturerIds);
 
-        Task<Result<ProductDto>> CreateProductAsync(ProductDto product);
+        Task<Result<ProductDto>> UpdateAsync(ProductDto product, List<string> manufacturerIds);
 
-        Task<Result<ProductDto>> UpdateProductAsync(ProductDto product);
-
-        Task<Result<object>> DeleteProductAsync(string id);
+        Task<Result<object>> DeleteAsync(string id);
     }
 }

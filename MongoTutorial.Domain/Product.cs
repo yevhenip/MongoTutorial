@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace MongoTutorial.Domain
 {
@@ -9,5 +10,9 @@ namespace MongoTutorial.Domain
         public string Name { get; set; }
 
         public DateTime? DateOfReceipt { get; set; }
+
+        public IEnumerable<Manufacturer> Manufacturers { get; set; }
+        
+        public User User { get; set; }
     }
 }

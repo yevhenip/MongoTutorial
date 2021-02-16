@@ -3,7 +3,7 @@ using AutoMapper;
 using MongoTutorial.Api.Models.Product;
 using MongoTutorial.Core.Dtos;
 
-namespace MongoTutorial.Api.MapperProfile
+namespace MongoTutorial.Api.MapperProfile.ProductProfile
 {
     public class ProductProfile : Profile
     {

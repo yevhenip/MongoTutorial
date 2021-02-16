@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System.Linq;
+using System.Threading.Tasks;
 using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
 using MongoTutorial.Api.Models.Product;
@@ -21,14 +22,14 @@ namespace MongoTutorial.Api.Controllers.v1
         [HttpGet]
         public async Task<IActionResult> GetProductsAsync()
         {
-            var result = await _productService.GetProductsAsync();
+            var result = await _productService.GetAllAsync();
             return Ok(result.Data);
         }
 
         [HttpGet("{productId}")]
         public async Task<IActionResult> GetProductByIdAsync([FromRoute] string productId)
         {
-            var result = await _productService.GetProductByIdAsync(productId);
+            var result = await _productService.GetAsync(productId);
             return Ok(result.Data);
         }
 
@@ -36,7 +37,7 @@ namespace MongoTutorial.Api.Controllers.v1
         public async Task<IActionResult> CreateProductAsync([FromBody] ProductModel product)
         {
             var productToDb = _mapper.Map<ProductDto>(product);
-            var result = await _productService.CreateProductAsync(productToDb);
+            var result = await _productService.CreateAsync(productToDb, product.ManufacturerIds.ToList());
             return Ok(result.Data);
         }
 
@@ -45,14 +46,14 @@ namespace MongoTutorial.Api.Controllers.v1
             [FromBody] ProductModel product)
         {
             var productToDb = _mapper.Map<ProductDto>(product) with {Id = productId};
-            var result = await _productService.UpdateProductAsync(productToDb);
+            var result = await _productService.UpdateAsync(productToDb, product.ManufacturerIds.ToList());
             return Ok(result.Data);
         }
 
         [HttpDelete("{productId}")]
         public async Task<IActionResult> DeleteProductAsync([FromRoute] string productId)
         {
-            var result = await _productService.DeleteProductAsync(productId);
+            var result = await _productService.DeleteAsync(productId);
             return Ok(result.Data);
         }
     }
