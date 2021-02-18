@@ -11,4 +11,9 @@
       <ProjectReference Include="..\MongoTutorial.Domain\MongoTutorial.Domain.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="5.0.3" />
+      <PackageReference Include="ScottBrady91.AspNetCore.Identity.Argon2PasswordHasher" Version="1.2.0" />
+    </ItemGroup>
+
 </Project>

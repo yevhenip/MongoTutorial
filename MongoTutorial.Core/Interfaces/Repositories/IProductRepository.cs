@@ -10,12 +10,12 @@ namespace MongoTutorial.Core.Interfaces.Repositories
 
         Task<Product> GetAsync(string id);
 
-        Task CreateProductAsync(Product product);
+        Task CreateAsync(Product product);
 
         Task UpdateAsync(Product product);
 
         Task DeleteAsync(string id);
-        
+
         Task<List<Product>> GetRangeByManufacturerId(string manufacturerId);
     }
 }

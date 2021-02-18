@@ -1,58 +1,57 @@
 ﻿using System.Threading.Tasks;
-using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using MongoTutorial.Api.Models.Manufacturer;
-using MongoTutorial.Core.Dtos;
+using MongoTutorial.Core.DTO.Manufacturer;
 using MongoTutorial.Core.Interfaces.Services;
 
 namespace MongoTutorial.Api.Controllers.v1
 {
+    [Authorize]
     public class ManufacturersController : ApiControllerBase
     {
         private readonly IManufacturerService _manufacturerService;
-        private readonly IMapper _mapper;
 
-        public ManufacturersController(IManufacturerService manufacturerService, IMapper mapper)
+        public ManufacturersController(IManufacturerService manufacturerService)
         {
             _manufacturerService = manufacturerService;
-            _mapper = mapper;
         }
         
         [HttpGet]
-        public async Task<IActionResult> GetManufacturersAsync()
+        public async Task<IActionResult> GetAllAsync()
         {
             var result = await _manufacturerService.GetAllAsync();
             return Ok(result.Data);
         }
 
-        [HttpGet("{manufacturersId}")]
-        public async Task<IActionResult> GetManufacturersByIdAsync([FromRoute] string manufacturersId)
+        [HttpGet("{manufacturerId}")]
+        public async Task<IActionResult> GetAsync([FromRoute] string manufacturerId)
         {
-            var result = await _manufacturerService.GetAsync(manufacturersId);
+            var result = await _manufacturerService.GetAsync(manufacturerId);
             return Ok(result.Data);
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpPost]
-        public async Task<IActionResult> CreateManufacturersAsync([FromBody] ManufacturerModel manufacturers)
+        public async Task<IActionResult> CreateAsync([FromBody] ManufacturerModelDto manufacturers)
         {
-            var manufacturersToDb = _mapper.Map<ManufacturerDto>(manufacturers);
-            var result = await _manufacturerService.CreateAsync(manufacturersToDb);
+            var result = await _manufacturerService.CreateAsync(manufacturers);
             return Ok(result.Data);
         }
 
-        [HttpPut("{manufacturersId}")]
-        public async Task<IActionResult> UpdateManufacturersAsync([FromRoute] string manufacturersId,
-            [FromBody] ManufacturerModel manufacturers)
+        [Authorize(Roles = "Admin")]
+        [HttpPut("{manufacturerId}")]
+        public async Task<IActionResult> UpdateAsync([FromRoute] string manufacturerId,
+            [FromBody] ManufacturerModelDto manufacturers)
         {
-            var manufacturersToDb = _mapper.Map<ManufacturerDto>(manufacturers) with {Id = manufacturersId};
-            var result = await _manufacturerService.UpdateAsync(manufacturersToDb);
+            var result = await _manufacturerService.UpdateAsync(manufacturerId, manufacturers);
             return Ok(result.Data);
         }
 
-        [HttpDelete("{manufacturersId}")]
-        public async Task<IActionResult> DeleteManufacturersAsync([FromRoute] string manufacturersId)
+        [Authorize(Roles = "Admin")]
+        [HttpDelete("{manufacturerId}")]
+        public async Task<IActionResult> DeleteAsync([FromRoute] string manufacturerId)
         {
-            var result = await _manufacturerService.DeleteAsync(manufacturersId);
+            var result = await _manufacturerService.DeleteAsync(manufacturerId);
             return Ok(result.Data);
         }
     }

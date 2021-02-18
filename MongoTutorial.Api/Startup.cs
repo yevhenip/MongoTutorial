@@ -42,7 +42,9 @@ namespace MongoTutorial.Api
                     o.RunDefaultMvcValidationAfterFluentValidationExecutes = false;
                 });
 
-            services.AddAutoMapper(typeof(Startup).Assembly, typeof(ProductProfile).Assembly);
+            services.AddAutoMapper(typeof(ProductProfile).Assembly);
+
+            services.AddJwtBearerAuthentication(Configuration);
 
             services.Scan(sc =>
                 sc.FromAssemblies(typeof(IProductRepository).Assembly, typeof(ProductRepository).Assembly,
@@ -68,6 +70,8 @@ namespace MongoTutorial.Api
             app.UseMyExceptionHandler();
             app.UseHsts();
             app.UseRouting();
+            app.UseAuthentication();
+            app.UseAuthorization();
             app.UseEndpoints(endpoints => { endpoints.MapControllers(); });
         }
     }

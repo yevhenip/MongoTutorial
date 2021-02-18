@@ -1,17 +1,16 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using System.Net;
 using System.Threading.Tasks;
 using AutoMapper;
 using MongoTutorial.Core.Common;
-using MongoTutorial.Core.Dtos;
+using MongoTutorial.Core.DTO.Manufacturer;
 using MongoTutorial.Core.Interfaces.Repositories;
 using MongoTutorial.Core.Interfaces.Services;
 using MongoTutorial.Domain;
 
 namespace MongoTutorial.Business.Services
 {
-    public class ManufacturerService : IManufacturerService
+    public class ManufacturerService : ServiceBase<Manufacturer>, IManufacturerService
     {
         private readonly IManufacturerRepository _manufacturerRepository;
         private readonly IProductRepository _productRepository;
@@ -27,66 +26,58 @@ namespace MongoTutorial.Business.Services
 
         public async Task<Result<List<ManufacturerDto>>> GetAllAsync()
         {
-            var manufacturersFromDb = await _manufacturerRepository.GetAllAsync();
-            var manufacturers = _mapper.Map<List<ManufacturerDto>>(manufacturersFromDb);
+            var manufacturersInDb = await _manufacturerRepository.GetAllAsync();
+            var manufacturers = _mapper.Map<List<ManufacturerDto>>(manufacturersInDb);
 
             return Result<List<ManufacturerDto>>.Success(manufacturers);
         }
 
         public async Task<Result<List<ManufacturerDto>>> GetRangeAsync(IEnumerable<string> manufacturerIds)
         {
-            var manufacturersFromDb =
+            var manufacturersInDb =
                 await _manufacturerRepository.GetRangeAsync(manufacturerIds);
-            var manufacturers = _mapper.Map<List<ManufacturerDto>>(manufacturersFromDb);
+            var manufacturers = _mapper.Map<List<ManufacturerDto>>(manufacturersInDb);
+
             return Result<List<ManufacturerDto>>.Success(manufacturers);
         }
 
         public async Task<Result<ManufacturerDto>> GetAsync(string id)
         {
-            var manufacturerFromDb = await _manufacturerRepository.GetAsync(id);
-            if (manufacturerFromDb == null)
-            {
-                throw Result<ManufacturerDto>.Failure("manufacturerId", "Manufacturer doesn't exists",
-                    HttpStatusCode.BadRequest);
-            }
+            var manufacturerInDb = await _manufacturerRepository.GetAsync(id);
+            CheckForNull(manufacturerInDb);
 
-            var manufacturer = _mapper.Map<ManufacturerDto>(manufacturerFromDb);
+            var manufacturer = _mapper.Map<ManufacturerDto>(manufacturerInDb);
 
             return Result<ManufacturerDto>.Success(manufacturer);
         }
 
-        public async Task<Result<ManufacturerDto>> CreateAsync(ManufacturerDto manufacturer)
+        public async Task<Result<ManufacturerDto>> CreateAsync(ManufacturerModelDto manufacturer)
         {
-            var manufacturerToDb = _mapper.Map<Manufacturer>(manufacturer);
+            var manufacturerDto = _mapper.Map<ManufacturerDto>(manufacturer);
+            var manufacturerToDb = _mapper.Map<Manufacturer>(manufacturerDto);
+
             await _manufacturerRepository.CreateAsync(manufacturerToDb);
-            return Result<ManufacturerDto>.Success(manufacturer);
+            return Result<ManufacturerDto>.Success(manufacturerDto);
         }
 
-        public async Task<Result<ManufacturerDto>> UpdateAsync(ManufacturerDto manufacturer)
+        public async Task<Result<ManufacturerDto>> UpdateAsync(string id, ManufacturerModelDto manufacturer)
         {
-            var manufacturerFromDb = await _manufacturerRepository.GetAsync(manufacturer.Id);
-            if (manufacturerFromDb == null)
-            {
-                throw Result<ManufacturerDto>.Failure("manufacturerId", "Manufacturer doesn't exists",
-                    HttpStatusCode.BadRequest);
-            }
+            var manufacturerInDb = await _manufacturerRepository.GetAsync(id);
+            CheckForNull(manufacturerInDb);
 
-            var manufacturerToDb = _mapper.Map<Manufacturer>(manufacturer);
-            await _manufacturerRepository.UpdateAsync(manufacturerToDb);
-            
-            await UpdateManufacturesInProduct(manufacturerToDb.Id, manufacturerToDb);
-            
-            return Result<ManufacturerDto>.Success(manufacturer);
+            var manufacturerDto = _mapper.Map<ManufacturerDto>(manufacturer) with {Id = id};
+            manufacturerInDb = _mapper.Map<Manufacturer>(manufacturerDto);
+
+            await _manufacturerRepository.UpdateAsync(manufacturerInDb);
+            await UpdateManufacturesInProduct(manufacturerInDb.Id, manufacturerInDb);
+
+            return Result<ManufacturerDto>.Success(manufacturerDto);
         }
 
         public async Task<Result<object>> DeleteAsync(string id)
         {
-            var manufacturerFromDb = await _manufacturerRepository.GetAsync(id);
-            if (manufacturerFromDb == null)
-            {
-                throw Result<ManufacturerDto>.Failure("manufacturerId", "Manufacturer doesn't exists",
-                    HttpStatusCode.BadRequest);
-            }
+            var manufacturerInDb = await _manufacturerRepository.GetAsync(id);
+            CheckForNull(manufacturerInDb);
 
             await UpdateManufacturesInProduct(id);
 
@@ -101,10 +92,10 @@ namespace MongoTutorial.Business.Services
             {
                 var manufacturers = product.Manufacturers.ToList();
                 manufacturers.RemoveAll(m => m.Id == id);
-                
+
                 manufacturers.Add(manufacturer);
                 product.Manufacturers = manufacturers;
-                
+
                 await _productRepository.UpdateAsync(product);
             }
         }

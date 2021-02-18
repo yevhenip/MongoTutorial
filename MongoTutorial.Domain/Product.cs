@@ -12,7 +12,7 @@ namespace MongoTutorial.Domain
         public DateTime? DateOfReceipt { get; set; }
 
         public IEnumerable<Manufacturer> Manufacturers { get; set; }
-        
+
         public User User { get; set; }
     }
 }

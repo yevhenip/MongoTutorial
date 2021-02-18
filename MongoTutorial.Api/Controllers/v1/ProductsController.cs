@@ -1,57 +1,55 @@
-﻿using System.Linq;
-using System.Threading.Tasks;
-using AutoMapper;
+﻿using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using MongoTutorial.Api.Models.Product;
-using MongoTutorial.Core.Dtos;
+using MongoTutorial.Core.DTO.Product;
 using MongoTutorial.Core.Interfaces.Services;
 
 namespace MongoTutorial.Api.Controllers.v1
 {
+    [Authorize]
     public class ProductsController : ApiControllerBase
     {
         private readonly IProductService _productService;
-        private readonly IMapper _mapper;
 
-        public ProductsController(IProductService productService, IMapper mapper)
+        public ProductsController(IProductService productService)
         {
             _productService = productService;
-            _mapper = mapper;
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetProductsAsync()
+        public async Task<IActionResult> GetAllAsync()
         {
             var result = await _productService.GetAllAsync();
             return Ok(result.Data);
         }
 
         [HttpGet("{productId}")]
-        public async Task<IActionResult> GetProductByIdAsync([FromRoute] string productId)
+        public async Task<IActionResult> GetAsync([FromRoute] string productId)
         {
             var result = await _productService.GetAsync(productId);
             return Ok(result.Data);
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpPost]
-        public async Task<IActionResult> CreateProductAsync([FromBody] ProductModel product)
+        public async Task<IActionResult> CreateAsync([FromBody] ProductModelDto product)
         {
-            var productToDb = _mapper.Map<ProductDto>(product);
-            var result = await _productService.CreateAsync(productToDb, product.ManufacturerIds.ToList());
+            var result = await _productService.CreateAsync(product);
             return Ok(result.Data);
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpPut("{productId}")]
-        public async Task<IActionResult> UpdateProductAsync([FromRoute] string productId,
-            [FromBody] ProductModel product)
+        public async Task<IActionResult> UpdateAsync([FromRoute] string productId,
+            [FromBody] ProductModelDto product)
         {
-            var productToDb = _mapper.Map<ProductDto>(product) with {Id = productId};
-            var result = await _productService.UpdateAsync(productToDb, product.ManufacturerIds.ToList());
+            var result = await _productService.UpdateAsync(productId, product);
             return Ok(result.Data);
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpDelete("{productId}")]
-        public async Task<IActionResult> DeleteProductAsync([FromRoute] string productId)
+        public async Task<IActionResult> DeleteAsync([FromRoute] string productId)
         {
             var result = await _productService.DeleteAsync(productId);
             return Ok(result.Data);

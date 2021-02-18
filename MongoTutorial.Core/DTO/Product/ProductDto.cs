@@ -1,11 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-using MongoTutorial.Domain;
+using MongoTutorial.Core.DTO.Users;
 
-namespace MongoTutorial.Core.Dtos
+namespace MongoTutorial.Core.DTO.Product
 {
     public record ProductDto(string Id = "", string Name = "", DateTime? DateOfReceipt = null,
-        IEnumerable<Manufacturer> Manufacturers = null, User User = null)
+        IEnumerable<Domain.Manufacturer> Manufacturers = null, UserDto User = null)
     {
     }
 }

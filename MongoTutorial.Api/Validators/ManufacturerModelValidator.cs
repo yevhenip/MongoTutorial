@@ -1,9 +1,9 @@
 ﻿using FluentValidation;
-using MongoTutorial.Api.Models.Manufacturer;
+using MongoTutorial.Core.DTO.Manufacturer;
 
 namespace MongoTutorial.Api.Validators
 {
-    public class ManufacturerModelValidator : AbstractValidator<ManufacturerModel>
+    public class ManufacturerModelValidator : AbstractValidator<ManufacturerModelDto>
     {
         public ManufacturerModelValidator()
         {

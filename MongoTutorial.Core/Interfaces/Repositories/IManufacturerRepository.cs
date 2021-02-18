@@ -15,7 +15,7 @@ namespace MongoTutorial.Core.Interfaces.Repositories
         Task UpdateAsync(Manufacturer manufacturer);
 
         Task DeleteAsync(string id);
-        
+
         Task<List<Manufacturer>> GetRangeAsync(IEnumerable<string> manufacturerIds);
     }
 }

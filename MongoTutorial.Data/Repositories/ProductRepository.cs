@@ -27,7 +27,7 @@ namespace MongoTutorial.Data.Repositories
             return _productCollection.Find(p => p.Id == id).SingleOrDefaultAsync();
         }
 
-        public Task CreateProductAsync(Product product)
+        public Task CreateAsync(Product product)
         {
             return _productCollection.InsertOneAsync(product);
         }
@@ -44,7 +44,7 @@ namespace MongoTutorial.Data.Repositories
 
         public Task<List<Product>> GetRangeByManufacturerId(string manufacturerId)
         {
-            return _productCollection.Find(p => 
+            return _productCollection.Find(p =>
                 p.Manufacturers.Any(m => m.Id == manufacturerId)).ToListAsync();
         }
     }

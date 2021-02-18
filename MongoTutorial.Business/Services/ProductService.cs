@@ -1,102 +1,99 @@
-﻿using MongoTutorial.Core.Dtos;
-using MongoTutorial.Core.Interfaces.Repositories;
+﻿using MongoTutorial.Core.Interfaces.Repositories;
 using MongoTutorial.Core.Interfaces.Services;
 using MongoTutorial.Domain;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 using AutoMapper;
 using MongoTutorial.Core.Common;
+using MongoTutorial.Core.DTO.Product;
 
 namespace MongoTutorial.Business.Services
 {
-    public class ProductService : IProductService
+    public class ProductService : ServiceBase<Product>, IProductService
     {
         private readonly IManufacturerService _manufacturerService;
         private readonly IProductRepository _productRepository;
+        private readonly IUserService _userService;
         private readonly IMapper _mapper;
 
         public ProductService(IManufacturerService manufacturerService, IProductRepository productRepository,
-            IMapper mapper)
+            IUserService userService, IMapper mapper)
         {
             _manufacturerService = manufacturerService;
             _productRepository = productRepository;
+            _userService = userService;
             _mapper = mapper;
         }
 
         public async Task<Result<List<ProductDto>>> GetAllAsync()
         {
-            var productsFromDb = await _productRepository.GetAllAsync();
+            var productsInDb = await _productRepository.GetAllAsync();
+            var products = _mapper.Map<List<ProductDto>>(productsInDb);
 
-            var products = _mapper.Map<List<ProductDto>>(productsFromDb);
             return Result<List<ProductDto>>.Success(products);
         }
 
         public async Task<Result<ProductDto>> GetAsync(string id)
         {
-            var productFromDb = await _productRepository.GetAsync(id);
-            if (productFromDb == null)
-            {
-                throw Result<ProductDto>.Failure("productId", "Product doesn't exists", HttpStatusCode.BadRequest);
-            }
+            var productInDb = await _productRepository.GetAsync(id);
+            CheckForNull(productInDb);
 
-            var product = _mapper.Map<ProductDto>(productFromDb);
+            var product = _mapper.Map<ProductDto>(productInDb);
 
             return Result<ProductDto>.Success(product);
         }
 
-        public async Task<Result<ProductDto>> CreateAsync(ProductDto product, List<string> manufacturerIds)
+        public async Task<Result<ProductDto>> CreateAsync(ProductModelDto product)
         {
-            var productToDb = await GetManufacturers(product, manufacturerIds);
+            var productToDb = await GetManufacturersAndUser(product, product.ManufacturerIds.ToList());
             var result = _mapper.Map<ProductDto>(productToDb);
 
-            await _productRepository.CreateProductAsync(productToDb);
+            await _productRepository.CreateAsync(productToDb);
             return Result<ProductDto>.Success(result);
         }
 
-        public async Task<Result<ProductDto>> UpdateAsync(ProductDto product, List<string> manufacturerIds)
+        public async Task<Result<ProductDto>> UpdateAsync(string productId, ProductModelDto product)
         {
-            var productFromDb = await _productRepository.GetAsync(product.Id);
-            if (productFromDb == null)
-            {
-                throw Result<ProductDto>.Failure("productId", "Product doesn't exists", HttpStatusCode.BadRequest);
-            }
+            var productInDb = await _productRepository.GetAsync(productId);
+            CheckForNull(productInDb);
 
-            var productToDb = await GetManufacturers(product, manufacturerIds);
-            var result = _mapper.Map<ProductDto>(productToDb);
+            productInDb = await GetManufacturersAndUser(product, product.ManufacturerIds.ToList());
+            var result = _mapper.Map<ProductDto>(productInDb) with {Id = productId};
 
-            //TODO: Update user in product document
-            await _productRepository.UpdateAsync(productToDb);
+            await _productRepository.UpdateAsync(productInDb);
             return Result<ProductDto>.Success(result);
         }
 
         public async Task<Result<object>> DeleteAsync(string id)
         {
-            var productFromDb = await _productRepository.GetAsync(id);
-            if (productFromDb == null)
-            {
-                return Result<object>.Failure("productId", "Product doesn't exists");
-            }
+            var productInDb = await _productRepository.GetAsync(id);
+            CheckForNull(productInDb);
 
             await _productRepository.DeleteAsync(id);
             return Result<object>.Success();
         }
 
-        private async Task<Product> GetManufacturers(ProductDto product, IReadOnlyCollection<string> manufacturerIds)
+        private async Task<Product> GetManufacturersAndUser(ProductModelDto product,
+            IReadOnlyCollection<string> manufacturerIds)
         {
-            var manufacturersFromDb =
+            var manufacturersInDb =
                 (await _manufacturerService.GetRangeAsync(manufacturerIds)).Data;
+            var userInDb = (await _userService.GetAsync(product.UserId)).Data;
 
-            if (manufacturerIds.Count != manufacturersFromDb.Count)
+            if (manufacturerIds.Count != manufacturersInDb.Count)
             {
-                var delta = manufacturerIds.Count - manufacturersFromDb.Count;
-                throw Result<ProductDto>.Failure("manufacturerIds", $"Provided {delta} non-existed id(s)",
-                    HttpStatusCode.BadRequest);
+                var delta = manufacturerIds.Count - manufacturersInDb.Count;
+                throw Result<ProductDto>.Failure("manufacturerIds",
+                    $"Provided {delta} non-existed id(s)", HttpStatusCode.BadRequest);
             }
 
-            var manufacturers = _mapper.Map<List<Manufacturer>>(manufacturersFromDb);
             var productToDb = _mapper.Map<Product>(product);
+            var manufacturers = _mapper.Map<List<Manufacturer>>(manufacturersInDb);
+            var user = _mapper.Map<User>(userInDb);
             productToDb.Manufacturers = manufacturers;
+            productToDb.User = user;
 
             return productToDb;
         }
