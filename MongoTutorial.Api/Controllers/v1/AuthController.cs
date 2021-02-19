@@ -1,9 +1,9 @@
-﻿using System.IdentityModel.Tokens.Jwt;
-using System.Linq;
+﻿using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Net.Http.Headers;
+using MongoTutorial.Core.Common;
 using MongoTutorial.Core.DTO.Auth;
+using MongoTutorial.Core.DTO.Users;
 using MongoTutorial.Core.Interfaces.Services;
 
 namespace MongoTutorial.Api.Controllers.v1
@@ -36,9 +36,13 @@ namespace MongoTutorial.Api.Controllers.v1
         [HttpPost("[action]")]
         public async Task<IActionResult> RefreshToken(TokenDto token)
         {
-            HttpContext.Session.Set("Session", new byte[] {1, 2, 3, 4, 5});
-            var userId = User.Claims.SingleOrDefault(c => c.Type == "Id")?.Value;
             var sessionId = HttpContext.Session.Id;
+            if (sessionId == User.Claims.SingleOrDefault(c => c.Type == "SessionId")?.Value)
+            {
+                throw Result<UserAuthenticatedDto>.Failure("session", "Session is actual");
+            }
+
+            var userId = User.Claims.SingleOrDefault(c => c.Type == "Id")?.Value;
             var result = await _authService.RefreshTokenAsync(userId, token, sessionId);
             return Ok(result.Data);
         }
