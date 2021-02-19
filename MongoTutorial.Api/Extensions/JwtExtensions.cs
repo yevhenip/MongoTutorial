@@ -32,9 +32,10 @@ namespace MongoTutorial.Api.Extensions
                 {
                     OnTokenValidated = async context =>
                     {
+                        var client = (MongoClient)services.BuildServiceProvider().GetService(typeof(IMongoClient));
                         var userId = context.Principal?.Claims.SingleOrDefault(c => c.Type == "Id")?.Value;
                         var userRepository =
-                            new UserRepository(new MongoClient(configuration["Data:ConnectionString"]));
+                            new UserRepository(client);
                         var user = await userRepository.GetAsync(userId);
                         var sessionId = context.Principal?.Claims.SingleOrDefault(c => c.Type == "SessionId")?.Value;
                         if (user.SessionId != sessionId)
