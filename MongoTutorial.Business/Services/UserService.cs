@@ -82,6 +82,13 @@ namespace MongoTutorial.Business.Services
             return Result<UserDto>.Success(userDto);
         }
 
+        public async Task<Result<UserDto>> UpdateAsync(UserDto user)
+        {
+            var userToDb = _mapper.Map<User>(user);
+            await _userRepository.UpdateAsync(userToDb);
+            return Result<UserDto>.Success(user);
+        }
+
         public async Task<Result<object>> DeleteAsync(string id)
         {
             var userInDb = await _userRepository.GetAsync(id);

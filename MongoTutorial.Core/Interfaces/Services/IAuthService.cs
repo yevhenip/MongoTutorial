@@ -8,7 +8,8 @@ namespace MongoTutorial.Core.Interfaces.Services
     public interface IAuthService
     {
         Task<Result<UserDto>> RegisterAsync(RegisterDto register);
-        Task<Result<UserAuthenticatedDto>> LoginAsync(LoginDto login);
-        Task<Result<UserAuthenticatedDto>> RefreshTokenAsync(string userId, TokenDto token);
+        Task<Result<UserAuthenticatedDto>> LoginAsync(LoginDto login, string sessionId);
+        Task<Result<UserAuthenticatedDto>> RefreshTokenAsync(string userId, TokenDto token, string sessionId);
+        Task<Result<object>> LogoutAsync(string userId);
     }
 }

@@ -20,5 +20,7 @@ namespace MongoTutorial.Domain
         public DateTime RegistrationDateTime { get; set; }
 
         public IEnumerable<string> Roles { get; set; } = new List<string>();
+
+        public string SessionId { get; set; }
     }
 }

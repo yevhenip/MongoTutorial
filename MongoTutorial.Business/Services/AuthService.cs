@@ -47,10 +47,12 @@ namespace MongoTutorial.Business.Services
             return Result<UserDto>.Success(user);
         }
 
-        public async Task<Result<UserAuthenticatedDto>> LoginAsync(LoginDto login)
+        public async Task<Result<UserAuthenticatedDto>> LoginAsync(LoginDto login, string sessionId)
         {
-            var user = (await _userService.GetByUserNameAsync(login.UserName)).Data;
+            var user = (await _userService.GetByUserNameAsync(login.UserName)).Data with {SessionId = sessionId};
             IsValid(user, login.Password);
+
+            await _userService.UpdateAsync(user);
 
             var jwtToken = await GenerateJwtToken(user);
             var tokenString = await GenerateRefreshToken();
@@ -69,13 +71,16 @@ namespace MongoTutorial.Business.Services
             return Result<UserAuthenticatedDto>.Success(authenticatedDto);
         }
 
-        public async Task<Result<UserAuthenticatedDto>> RefreshTokenAsync(string userId, TokenDto token)
+        public async Task<Result<UserAuthenticatedDto>> RefreshTokenAsync(string userId, TokenDto token,
+            string sessionId)
         {
-            var user = (await _userService.GetAsync(userId)).Data;
+            var user = (await _userService.GetAsync(userId)).Data with {SessionId = sessionId};
             var refreshTokenInDb = await _tokenRepository.GetAsync(userId, token.Name);
 
             CheckForNull(refreshTokenInDb);
             IsValid(refreshTokenInDb);
+
+            await _userService.UpdateAsync(user);
 
             var jwtToken = await GenerateJwtToken(user);
             var tokenString = await GenerateRefreshToken();
@@ -95,6 +100,13 @@ namespace MongoTutorial.Business.Services
             return Result<UserAuthenticatedDto>.Success(authenticatedDto);
         }
 
+        public async Task<Result<object>> LogoutAsync(string userId)
+        {
+            var user = (await _userService.GetAsync(userId)).Data with {SessionId = null};
+            await _userService.UpdateAsync(user);
+            return Result<object>.Success();
+        }
+
         private void IsValid(UserDto user, string password)
         {
             var result = _hasher.VerifyHashedPassword(user, user.PasswordHash, password);
@@ -111,14 +123,15 @@ namespace MongoTutorial.Business.Services
                 throw Result<RefreshToken>.Failure("token", "Token is expired");
             }
         }
-        
+
         private Task<string> GenerateJwtToken(UserDto user)
         {
             List<Claim> claims = new()
             {
                 new("Id", user.Id),
                 new("UserName", user.UserName),
-                new("Email", user.Email)
+                new("Email", user.Email),
+                new("SessionId", user.SessionId)
             };
             claims.AddRange(user.Roles.Select(r => new Claim(ClaimTypes.Role, r)));
 

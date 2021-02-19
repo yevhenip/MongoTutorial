@@ -11,7 +11,8 @@ namespace MongoTutorial.Core.DTO.Users
         DateTime RegistrationDateTime = default, 
         string Email = "", 
         string Phone = "", 
-        IEnumerable<string> Roles = null)
+        IEnumerable<string> Roles = null,
+        string SessionId = null)
     {
     }
 }

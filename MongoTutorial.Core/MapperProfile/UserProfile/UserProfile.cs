@@ -24,7 +24,9 @@ namespace MongoTutorial.Core.MapperProfile.UserProfile
                 .ForMember(u => u.RegistrationDateTime, opt
                     => opt.MapFrom(u => u.RegistrationDateTime))
                 .ForMember(u => u.Roles, opt
-                    => opt.MapFrom(u => u.Roles));
+                    => opt.MapFrom(u => u.Roles))
+                .ForMember(u => u.SessionId, opt
+                    => opt.MapFrom(u => u.SessionId));
 
             CreateMap<User, UserDto>()
                 .ForMember(u => u.Id, opt
@@ -42,7 +44,9 @@ namespace MongoTutorial.Core.MapperProfile.UserProfile
                 .ForMember(u => u.RegistrationDateTime, opt
                     => opt.MapFrom(u => u.RegistrationDateTime))
                 .ForMember(u => u.Roles, opt
-                    => opt.MapFrom(u => u.Roles));
+                    => opt.MapFrom(u => u.Roles))
+                .ForMember(u => u.SessionId, opt
+                    => opt.MapFrom(u => u.SessionId));
 
             CreateMap<UserModelDto, UserDto>()
                 .ForMember(u => u.FullName, opt

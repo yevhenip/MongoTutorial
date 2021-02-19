@@ -1,6 +1,8 @@
-﻿using System.Threading.Tasks;
+﻿using System.IdentityModel.Tokens.Jwt;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Net.Http.Headers;
 using MongoTutorial.Core.DTO.Product;
 using MongoTutorial.Core.Interfaces.Services;
 
@@ -19,6 +21,9 @@ namespace MongoTutorial.Api.Controllers.v1
         [HttpGet]
         public async Task<IActionResult> GetAllAsync()
         {
+            var accessToken = Request.Headers[HeaderNames.Authorization].ToString().Substring(7);
+            var t = new JwtSecurityTokenHandler().ReadToken(accessToken);
+
             var result = await _productService.GetAllAsync();
             return Ok(result.Data);
         }

@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using AutoMapper;
 using MongoTutorial.Core.Common;
@@ -90,7 +89,7 @@ namespace MongoTutorial.Business.Services
             var products = await _productRepository.GetRangeByManufacturerId(id);
             foreach (var product in products)
             {
-                var manufacturers = product.Manufacturers.ToList();
+                var manufacturers = product.Manufacturers;
                 manufacturers.RemoveAll(m => m.Id == id);
 
                 manufacturers.Add(manufacturer);

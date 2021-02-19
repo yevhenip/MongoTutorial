@@ -44,6 +44,8 @@ namespace MongoTutorial.Api
 
             services.AddAutoMapper(typeof(ProductProfile).Assembly);
 
+            services.AddDistributedMemoryCache();
+            services.AddSession();
             services.AddJwtBearerAuthentication(Configuration);
 
             services.Scan(sc =>
@@ -70,6 +72,7 @@ namespace MongoTutorial.Api
             app.UseMyExceptionHandler();
             app.UseHsts();
             app.UseRouting();
+            app.UseSession();
             app.UseAuthentication();
             app.UseAuthorization();
             app.UseEndpoints(endpoints => { endpoints.MapControllers(); });

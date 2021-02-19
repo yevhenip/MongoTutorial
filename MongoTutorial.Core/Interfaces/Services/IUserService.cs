@@ -18,6 +18,8 @@ namespace MongoTutorial.Core.Interfaces.Services
         Task<Result<UserDto>> CreateAsync(UserDto user);
 
         Task<Result<UserDto>> UpdateAsync(string userId, UserModelDto user);
+        
+        Task<Result<UserDto>> UpdateAsync(UserDto user);
 
         Task<Result<object>> DeleteAsync(string id);
     }
