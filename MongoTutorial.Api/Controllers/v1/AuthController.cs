@@ -1,9 +1,8 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
-using MongoTutorial.Core.Common;
 using MongoTutorial.Core.DTO.Auth;
-using MongoTutorial.Core.DTO.Users;
 using MongoTutorial.Core.Interfaces.Services;
 
 namespace MongoTutorial.Api.Controllers.v1
@@ -27,8 +26,7 @@ namespace MongoTutorial.Api.Controllers.v1
         [HttpPost("[action]")]
         public async Task<IActionResult> Login(LoginDto login)
         {
-            HttpContext.Session.Set("What", new byte[] {1, 2, 3, 4, 5});
-            var sessionId = HttpContext.Session.Id;
+            var sessionId = Guid.NewGuid().ToString();
             var result = await _authService.LoginAsync(login, sessionId);
             return Ok(result.Data);
         }
@@ -36,12 +34,7 @@ namespace MongoTutorial.Api.Controllers.v1
         [HttpPost("[action]")]
         public async Task<IActionResult> RefreshToken(TokenDto token)
         {
-            var sessionId = HttpContext.Session.Id;
-            if (sessionId == User.Claims.SingleOrDefault(c => c.Type == "SessionId")?.Value)
-            {
-                throw Result<UserAuthenticatedDto>.Failure("session", "Session is actual");
-            }
-
+            var sessionId = Guid.NewGuid().ToString();
             var userId = User.Claims.SingleOrDefault(c => c.Type == "Id")?.Value;
             var result = await _authService.RefreshTokenAsync(userId, token, sessionId);
             return Ok(result.Data);

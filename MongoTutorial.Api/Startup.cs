@@ -5,6 +5,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using MongoDB.Driver;
+using MongoTutorial.Api.Common;
 using MongoTutorial.Api.Extensions;
 using MongoTutorial.Business.Services;
 using MongoTutorial.Core.Interfaces.Repositories;
@@ -44,10 +45,6 @@ namespace MongoTutorial.Api
 
             services.AddAutoMapper(typeof(ProductProfile).Assembly);
 
-            services.AddDistributedMemoryCache();
-            services.AddSession();
-            services.AddJwtBearerAuthentication(Configuration);
-
             services.Scan(sc =>
                 sc.FromAssemblies(typeof(IProductRepository).Assembly, typeof(ProductRepository).Assembly,
                         typeof(ProductService).Assembly)
@@ -60,6 +57,9 @@ namespace MongoTutorial.Api
 
             services.AddSingleton<IMongoClient, MongoClient>(_ =>
                 new MongoClient(Configuration["Data:ConnectionString"]));
+            services.AddScoped<ValidateTokenSessionId>();
+
+            services.AddJwtBearerAuthentication(Configuration);
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
@@ -72,7 +72,6 @@ namespace MongoTutorial.Api
             app.UseMyExceptionHandler();
             app.UseHsts();
             app.UseRouting();
-            app.UseSession();
             app.UseAuthentication();
             app.UseAuthorization();
             app.UseEndpoints(endpoints => { endpoints.MapControllers(); });

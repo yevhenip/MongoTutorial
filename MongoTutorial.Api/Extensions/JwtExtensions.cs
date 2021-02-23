@@ -1,16 +1,11 @@
 ﻿using System;
-using System.Linq;
-using System.Net;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
-using MongoDB.Driver;
-using MongoTutorial.Core.Common;
-using MongoTutorial.Core.DTO.Users;
+using MongoTutorial.Api.Common;
 using MongoTutorial.Core.Settings;
-using MongoTutorial.Data.Repositories;
 
 namespace MongoTutorial.Api.Extensions
 {
@@ -28,23 +23,7 @@ namespace MongoTutorial.Api.Extensions
             }).AddJwtBearer(o =>
             {
                 o.SaveToken = true;
-                o.Events = new JwtBearerEvents
-                {
-                    OnTokenValidated = async context =>
-                    {
-                        var client = (MongoClient)services.BuildServiceProvider().GetService(typeof(IMongoClient));
-                        var userId = context.Principal?.Claims.SingleOrDefault(c => c.Type == "Id")?.Value;
-                        var userRepository =
-                            new UserRepository(client);
-                        var user = await userRepository.GetAsync(userId);
-                        var sessionId = context.Principal?.Claims.SingleOrDefault(c => c.Type == "SessionId")?.Value;
-                        if (user.SessionId != sessionId)
-                        {
-                            throw Result<UserAuthenticatedDto>.Failure("token", "This is invalid token",
-                                HttpStatusCode.BadRequest);
-                        }
-                    }
-                };
+                o.EventsType = typeof(ValidateTokenSessionId);
                 o.TokenValidationParameters = new()
                 {
                     ValidateIssuer = true,
