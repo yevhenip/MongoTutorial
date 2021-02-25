@@ -10,6 +10,7 @@ using MongoTutorial.Api.Extensions;
 using MongoTutorial.Business.Services;
 using MongoTutorial.Core.Interfaces.Repositories;
 using MongoTutorial.Core.MapperProfile.ProductProfile;
+using MongoTutorial.Core.Settings.CacheSettings;
 using MongoTutorial.Data.Repositories;
 
 namespace MongoTutorial.Api
@@ -45,6 +46,12 @@ namespace MongoTutorial.Api
 
             services.AddAutoMapper(typeof(ProductProfile).Assembly);
 
+            services.AddStackExchangeRedisCache(option =>
+            {
+                option.Configuration = Configuration["Cache:Configuration"];
+                option.InstanceName = Configuration["Cache:InstanceName"];
+            });
+
             services.Scan(sc =>
                 sc.FromAssemblies(typeof(IProductRepository).Assembly, typeof(ProductRepository).Assembly,
                         typeof(ProductService).Assembly)
@@ -58,6 +65,10 @@ namespace MongoTutorial.Api
             services.AddSingleton<IMongoClient, MongoClient>(_ =>
                 new MongoClient(Configuration["Data:ConnectionString"]));
             services.AddScoped<ValidateTokenSessionId>();
+
+            services.Configure<CacheProductSettings>(Configuration.GetSection("Cache:CacheOptions:Product"));
+            services.Configure<CacheManufacturerSettings>(Configuration.GetSection("Cache:CacheOptions:Manufacturer"));
+            services.Configure<CacheUserSettings>(Configuration.GetSection("Cache:CacheOptions:User"));
 
             services.AddJwtBearerAuthentication(Configuration);
         }

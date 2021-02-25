@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using AutoMapper;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using MongoTutorial.Core.Common;
@@ -26,21 +27,20 @@ namespace MongoTutorial.Business.Services
         private readonly IRefreshTokenRepository _tokenRepository;
         private readonly PasswordHasher<UserDto> _hasher;
         private readonly IUserService _userService;
-        private readonly IMapper _mapper;
 
         public AuthService(IOptions<JwtTokenConfiguration> tokenConfiguration, IRefreshTokenRepository tokenRepository,
-            IUserService userService, IMapper mapper)
+            IUserService userService, IDistributedCache distributedCache, IMapper mapper) 
+            : base(distributedCache, mapper)
         {
             _tokenConfiguration = tokenConfiguration.Value;
             _tokenRepository = tokenRepository;
             _userService = userService;
-            _mapper = mapper;
             _hasher = new();
         }
 
         public async Task<Result<UserDto>> RegisterAsync(RegisterDto register)
         {
-            var user = _mapper.Map<UserDto>(register);
+            var user = Mapper.Map<UserDto>(register);
             var hashedPassword = _hasher.HashPassword(user, register.Password);
             user = user with {PasswordHash = hashedPassword, Roles = new List<string> {"User"}};
             await _userService.CreateAsync(user);
@@ -56,7 +56,7 @@ namespace MongoTutorial.Business.Services
 
             var jwtToken = await GenerateJwtToken(user);
             var tokenString = await GenerateRefreshToken();
-            var userInDb = _mapper.Map<User>(user);
+            var userInDb = Mapper.Map<User>(user);
             var refreshToken = new RefreshToken
             {
                 Id = Guid.NewGuid().ToString(),
@@ -84,7 +84,7 @@ namespace MongoTutorial.Business.Services
 
             var jwtToken = await GenerateJwtToken(user);
             var tokenString = await GenerateRefreshToken();
-            var userInDb = _mapper.Map<User>(user);
+            var userInDb = Mapper.Map<User>(user);
             var refreshToken = new RefreshToken
             {
                 Id = Guid.NewGuid().ToString(),

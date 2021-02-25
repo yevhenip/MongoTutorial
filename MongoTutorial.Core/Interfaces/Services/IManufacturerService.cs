@@ -15,7 +15,7 @@ namespace MongoTutorial.Core.Interfaces.Services
 
         Task<Result<ManufacturerDto>> CreateAsync(ManufacturerModelDto manufacturer);
 
-        Task<Result<ManufacturerDto>> UpdateAsync(string id, ManufacturerModelDto manufacturer);
+        Task<Result<ManufacturerDto>> UpdateAsync(string manufacturerId, ManufacturerModelDto manufacturer);
 
         Task<Result<object>> DeleteAsync(string id);
     }
