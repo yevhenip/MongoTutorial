@@ -2,6 +2,7 @@
 using MongoTutorial.Core.Interfaces.Services;
 using MongoTutorial.Domain;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text.Json;
@@ -19,6 +20,7 @@ namespace MongoTutorial.Business.Services
 {
     public class ProductService : ServiceBase<Product>, IProductService
     {
+        private readonly string _path = Directory.GetCurrentDirectory() + @"\wwwroot\Products\";
         private readonly CacheManufacturerSettings _manufacturerSettings;
         private readonly IManufacturerService _manufacturerService;
         private readonly IProductRepository _productRepository;
@@ -59,11 +61,20 @@ namespace MongoTutorial.Business.Services
             }
 
             var productInDb = await _productRepository.GetAsync(id);
+
+            if (productInDb is not null)
+            {
+                product = Mapper.Map<ProductDto>(productInDb);
+                await DistributedCache.SetCacheAsync(cacheKey, productInDb, _productSettings);
+
+                return Result<ProductDto>.Success(product);
+            }
+
+            productInDb = await FileExtensions.ReadFromFileAsync<Product>(_path, cacheKey + ".json");
             CheckForNull(productInDb);
 
-            await DistributedCache.SetCacheAsync(cacheKey, productInDb, _productSettings);
-
             product = Mapper.Map<ProductDto>(productInDb);
+            await DistributedCache.SetCacheAsync(cacheKey, productInDb, _productSettings);
 
             return Result<ProductDto>.Success(product);
         }
@@ -74,6 +85,7 @@ namespace MongoTutorial.Business.Services
 
             var cacheKey = $"Product-{productToDb.Id}";
             await DistributedCache.SetCacheAsync(cacheKey, productToDb, _productSettings);
+            await productToDb.WriteToFileAsync(_path, cacheKey + ".json");
             var result = Mapper.Map<ProductDto>(productToDb);
 
             await _productRepository.CreateAsync(productToDb);
@@ -86,7 +98,9 @@ namespace MongoTutorial.Business.Services
             Product productInDb;
             if (!await DistributedCache.IsExistsAsync(cacheKey))
             {
-                productInDb = await _productRepository.GetAsync(productId);
+                productInDb = await _productRepository.GetAsync(productId) ??
+                              await FileExtensions.ReadFromFileAsync<Product>(_path, cacheKey + ".json");
+
                 CheckForNull(productInDb);
             }
 
@@ -95,6 +109,7 @@ namespace MongoTutorial.Business.Services
             var result = Mapper.Map<ProductDto>(productInDb) with {Id = productId};
 
             await DistributedCache.SetCacheAsync(cacheKey, productInDb, _productSettings);
+            await productInDb.WriteToFileAsync(_path, cacheKey + ".json");
             await _productRepository.UpdateAsync(productInDb);
             return Result<ProductDto>.Success(result);
         }

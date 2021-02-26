@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.IO;
 using System.Threading.Tasks;
 using AutoMapper;
 using Microsoft.Extensions.Caching.Distributed;
@@ -15,6 +16,7 @@ namespace MongoTutorial.Business.Services
 {
     public class ManufacturerService : ServiceBase<Manufacturer>, IManufacturerService
     {
+        private readonly string _path = Directory.GetCurrentDirectory() + @"\wwwroot\Manufacturers\";
         private readonly CacheManufacturerSettings _manufacturerSettings;
         private readonly IManufacturerRepository _manufacturerRepository;
         private readonly IProductRepository _productRepository;
@@ -59,6 +61,15 @@ namespace MongoTutorial.Business.Services
             }
 
             var manufacturerInDb = await _manufacturerRepository.GetAsync(id);
+            if (manufacturerInDb is not null)
+            {
+                await DistributedCache.SetCacheAsync(cacheKey, manufacturerInDb, _manufacturerSettings);
+                manufacturer = Mapper.Map<ManufacturerDto>(manufacturerInDb);
+
+                return Result<ManufacturerDto>.Success(manufacturer);
+            }
+
+            manufacturerInDb = await FileExtensions.ReadFromFileAsync<Manufacturer>(_path, cacheKey + ".json");
             CheckForNull(manufacturerInDb);
 
             await DistributedCache.SetCacheAsync(cacheKey, manufacturerInDb, _manufacturerSettings);
@@ -74,6 +85,7 @@ namespace MongoTutorial.Business.Services
 
             var cacheKey = $"Manufacturer-{manufacturerToDb.Id}";
             await DistributedCache.SetCacheAsync(cacheKey, manufacturerToDb, _manufacturerSettings);
+            await manufacturerToDb.WriteToFileAsync(_path, cacheKey + ".json");
 
             await _manufacturerRepository.CreateAsync(manufacturerToDb);
             return Result<ManufacturerDto>.Success(manufacturerDto);
@@ -85,7 +97,8 @@ namespace MongoTutorial.Business.Services
             Manufacturer manufacturerInDb;
             if (!await DistributedCache.IsExistsAsync(cacheKey))
             {
-                manufacturerInDb = await _manufacturerRepository.GetAsync(manufacturerId);
+                manufacturerInDb = await _manufacturerRepository.GetAsync(manufacturerId) ??
+                                   await FileExtensions.ReadFromFileAsync<Manufacturer>(_path, cacheKey + ".json");
                 CheckForNull(manufacturerInDb);
             }
 
@@ -97,6 +110,7 @@ namespace MongoTutorial.Business.Services
 
             await DistributedCache.UpdateAsync(cacheKey, manufacturerInDb);
             await _manufacturerRepository.UpdateAsync(manufacturerInDb);
+            await manufacturerInDb.WriteToFileAsync(_path, cacheKey + ".json");
 
             return Result<ManufacturerDto>.Success(manufacturerDto);
         }

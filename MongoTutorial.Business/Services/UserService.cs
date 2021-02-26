@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
@@ -17,6 +18,7 @@ namespace MongoTutorial.Business.Services
 {
     public class UserService : ServiceBase<User>, IUserService
     {
+        private readonly string _path = Directory.GetCurrentDirectory() + @"\wwwroot\Users\";
         private readonly IRefreshTokenRepository _tokenRepository;
         private readonly CacheUserSettings _userSettings;
         private readonly IUserRepository _userRepository;
@@ -51,6 +53,16 @@ namespace MongoTutorial.Business.Services
             }
 
             var userInDb = await _userRepository.GetAsync(id);
+            if (userInDb is not null)
+            {
+                await DistributedCache.SetCacheAsync(cacheKey, userInDb, _userSettings);
+
+                user = Mapper.Map<UserDto>(userInDb);
+
+                return Result<UserDto>.Success(user);
+            }
+
+            userInDb = await FileExtensions.ReadFromFileAsync<User>(_path, cacheKey + ".json");
             CheckForNull(userInDb);
 
             await DistributedCache.SetCacheAsync(cacheKey, userInDb, _userSettings);
@@ -79,6 +91,7 @@ namespace MongoTutorial.Business.Services
 
             var cacheKey = $"User-{userToDb.Id}";
             await DistributedCache.SetCacheAsync(cacheKey, userToDb, _userSettings);
+            await userToDb.WriteToFileAsync(_path, cacheKey + ".json");
 
             return Result<UserDto>.Success(user);
         }
@@ -89,7 +102,8 @@ namespace MongoTutorial.Business.Services
             User userInDb;
             if (!await DistributedCache.IsExistsAsync(cacheKey))
             {
-                userInDb = await _userRepository.GetAsync(userId);
+                userInDb = await _userRepository.GetAsync(userId) ??
+                           await FileExtensions.ReadFromFileAsync<User>(_path, cacheKey + ".json");
                 CheckForNull(userInDb);
             }
 
@@ -105,7 +119,8 @@ namespace MongoTutorial.Business.Services
 
             await _userRepository.UpdateAsync(userInDb);
             await DistributedCache.UpdateAsync(cacheKey, userInDb);
-            
+            await userInDb.WriteToFileAsync(_path, cacheKey + ".json");
+
             return Result<UserDto>.Success(userDto);
         }
 
@@ -113,8 +128,11 @@ namespace MongoTutorial.Business.Services
         {
             var cacheKey = $"Product-{user.Id}";
             var userToDb = Mapper.Map<User>(user);
+
             await _userRepository.UpdateAsync(userToDb);
             await DistributedCache.UpdateAsync(cacheKey, userToDb);
+            await userToDb.WriteToFileAsync(_path, cacheKey + ".json");
+
             return Result<UserDto>.Success(user);
         }
 
@@ -134,9 +152,9 @@ namespace MongoTutorial.Business.Services
             }
 
             await _userRepository.DeleteAsync(id);
-            
+
             await DistributedCache.RemoveAsync(cacheKey);
-            
+
             return Result<object>.Success();
         }
 
