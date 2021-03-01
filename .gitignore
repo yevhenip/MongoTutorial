@@ -6,7 +6,6 @@
 # User-specific files
 *.rsuser
 *.suo
-*.user
 *.userosscache
 *.sln.docstates
 
@@ -441,4 +440,7 @@ $RECYCLE.BIN/
 !.vscode/launch.json
 !.vscode/extensions.json
 
-/MongoTutorial.Api/wwwroot
+/MongoTutorial.Api/wwwroot/Manufacturers/
+/MongoTutorial.Api/wwwroot/Products/
+/MongoTutorial.Api/wwwroot/Users/
+/.run/

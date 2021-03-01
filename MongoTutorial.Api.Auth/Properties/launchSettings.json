@@ -3,23 +3,23 @@
     "windowsAuthentication": false,
     "anonymousAuthentication": true,
     "iisExpress": {
-      "applicationUrl": "http://localhost:7544",
-      "sslPort": 44310
+      "applicationUrl": "http://localhost:15226",
+      "sslPort": 44321
     }
   },
   "profiles": {
     "IIS Express": {
       "commandName": "IISExpress",
-      "launchBrowser": false,
+      "launchBrowser": true,
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       }
     },
-    "MongoTutorial.Api": {
+    "MongoTutorial.Api.Auth": {
       "commandName": "Project",
       "dotnetRunMessages": "true",
       "launchBrowser": false,
-      "applicationUrl": "https://localhost:1001;http://localhost:1000",
+      "applicationUrl": "https://localhost:2001;http://localhost:2000",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       }

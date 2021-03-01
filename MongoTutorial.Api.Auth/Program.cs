@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Hosting;
 
-namespace MongoTutorial.Api
+namespace MongoTutorial.Api.Auth
 {
     public static class Program
     {
@@ -12,6 +12,6 @@ namespace MongoTutorial.Api
 
         private static IHostBuilder CreateHostBuilder(string[] args) =>
             Host.CreateDefaultBuilder(args)
-                .ConfigureWebHostDefaults(webBuilder => { webBuilder.UseStartup<Microsoft.AspNetCore.Hosting.StartupBase>(); });
+                .ConfigureWebHostDefaults(webBuilder => { webBuilder.UseStartup<Startup>(); });
     }
 }
