@@ -19,7 +19,7 @@ namespace Warehouse.Api.Users.Business
 {
     public class UserService : ServiceBase<User>, IUserService
     {
-        private readonly string _path = Directory.GetCurrentDirectory() + @"\wwwroot\Users\";
+        private readonly string _path = Directory.GetCurrentDirectory() + @"\..\Warehouse.Api\wwwroot\Users\";
         private readonly IRefreshTokenRepository _tokenRepository;
         private readonly CacheUserSettings _userSettings;
         private readonly IUserRepository _userRepository;
@@ -63,7 +63,7 @@ namespace Warehouse.Api.Users.Business
                 return Result<UserDto>.Success(user);
             }
 
-            userInDb = await FileExtensions.ReadFromFileAsync<User>(_path, cacheKey + ".json");
+            userInDb = await FileExtensions.ReadFromFileAsync<User>(_path, cacheKey);
             CheckForNull(userInDb);
 
             await DistributedCache.SetCacheAsync(cacheKey, userInDb, _userSettings);
@@ -92,7 +92,7 @@ namespace Warehouse.Api.Users.Business
 
             var cacheKey = $"User-{userToDb.Id}";
             await DistributedCache.SetCacheAsync(cacheKey, userToDb, _userSettings);
-            await userToDb.WriteToFileAsync(_path, cacheKey + ".json");
+            await userToDb.WriteToFileAsync(_path, cacheKey);
 
             return Result<UserDto>.Success(user);
         }
@@ -104,7 +104,7 @@ namespace Warehouse.Api.Users.Business
             if (!await DistributedCache.IsExistsAsync(cacheKey))
             {
                 userInDb = await _userRepository.GetAsync(userId) ??
-                           await FileExtensions.ReadFromFileAsync<User>(_path, cacheKey + ".json");
+                           await FileExtensions.ReadFromFileAsync<User>(_path, cacheKey);
                 CheckForNull(userInDb);
             }
 
@@ -120,21 +120,18 @@ namespace Warehouse.Api.Users.Business
 
             await _userRepository.UpdateAsync(userInDb);
             await DistributedCache.UpdateAsync(cacheKey, userInDb);
-            await userInDb.WriteToFileAsync(_path, cacheKey + ".json");
+            await userInDb.WriteToFileAsync(_path, cacheKey);
 
             return Result<UserDto>.Success(userDto);
         }
 
-        public async Task<Result<UserDto>> UpdateAsync(UserDto user)
+        public async Task UpdateAsync(User user)
         {
             var cacheKey = $"Product-{user.Id}";
-            var userToDb = Mapper.Map<User>(user);
 
-            await _userRepository.UpdateAsync(userToDb);
-            await DistributedCache.UpdateAsync(cacheKey, userToDb);
-            await userToDb.WriteToFileAsync(_path, cacheKey + ".json");
-
-            return Result<UserDto>.Success(user);
+            await _userRepository.UpdateAsync(user);
+            await DistributedCache.UpdateAsync(cacheKey, user);
+            await user.WriteToFileAsync(_path, cacheKey);
         }
 
         public async Task<Result<object>> DeleteAsync(string id)
@@ -153,8 +150,8 @@ namespace Warehouse.Api.Users.Business
             }
 
             await _userRepository.DeleteAsync(id);
-
             await DistributedCache.RemoveAsync(cacheKey);
+            await FileExtensions.DeleteFileAsync(_path, cacheKey);
 
             return Result<object>.Success();
         }

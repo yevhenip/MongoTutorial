@@ -6,9 +6,17 @@
 
     <ItemGroup>
       <PackageReference Include="FluentValidation.AspNetCore" Version="9.5.1" />
+      <PackageReference Include="RabbitMQ.Client" Version="6.2.1" />
     </ItemGroup>
 
     <ItemGroup>
       <ProjectReference Include="..\Warehouse.Core\Warehouse.Core.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="wwwroot\Customers" />
+      <Folder Include="wwwroot\Manufacturers" />
+      <Folder Include="wwwroot\Products" />
+      <Folder Include="wwwroot\Users" />
     </ItemGroup>
 </Project>

@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using Warehouse.Core.Common;
 using Warehouse.Core.DTO.Users;
+using Warehouse.Domain;
 
 namespace Warehouse.Core.Interfaces.Services
 {
@@ -19,7 +20,7 @@ namespace Warehouse.Core.Interfaces.Services
 
         Task<Result<UserDto>> UpdateAsync(string userId, UserModelDto user);
         
-        Task<Result<UserDto>> UpdateAsync(UserDto user);
+        Task UpdateAsync(User user);
 
         Task<Result<object>> DeleteAsync(string id);
     }

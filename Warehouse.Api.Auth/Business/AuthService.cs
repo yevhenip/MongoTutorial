@@ -15,6 +15,7 @@ using Warehouse.Core.Business;
 using Warehouse.Core.Common;
 using Warehouse.Core.DTO.Auth;
 using Warehouse.Core.DTO.Users;
+using Warehouse.Core.Interfaces.Messaging.Sender;
 using Warehouse.Core.Interfaces.Repositories;
 using Warehouse.Core.Interfaces.Services;
 using Warehouse.Core.Settings;
@@ -26,16 +27,18 @@ namespace Warehouse.Api.Auth.Business
     {
         private readonly JwtTokenConfiguration _tokenConfiguration;
         private readonly IRefreshTokenRepository _tokenRepository;
+        private readonly IUserRepository _userRepository;
         private readonly PasswordHasher<UserDto> _hasher;
-        private readonly IUserService _userService;
+        private readonly ISender _sender;
 
         public AuthService(IOptions<JwtTokenConfiguration> tokenConfiguration, IRefreshTokenRepository tokenRepository,
-            IUserService userService, IDistributedCache distributedCache, IMapper mapper) 
-            : base(distributedCache, mapper)
+            IDistributedCache distributedCache, IMapper mapper, IUserRepository userRepository, ISender sender) : base(distributedCache,
+            mapper)
         {
             _tokenConfiguration = tokenConfiguration.Value;
+            _userRepository = userRepository;
             _tokenRepository = tokenRepository;
-            _userService = userService;
+            _sender = sender;
             _hasher = new();
         }
 
@@ -44,46 +47,51 @@ namespace Warehouse.Api.Auth.Business
             var user = Mapper.Map<UserDto>(register);
             var hashedPassword = _hasher.HashPassword(user, register.Password);
             user = user with {PasswordHash = hashedPassword, Roles = new List<string> {"User"}};
-            await _userService.CreateAsync(user);
+            await _sender.SendMessage(user, "CreateUserQueue");
             return Result<UserDto>.Success(user);
         }
 
         public async Task<Result<UserAuthenticatedDto>> LoginAsync(LoginDto login, string sessionId)
         {
-            var user = (await _userService.GetByUserNameAsync(login.UserName)).Data with {SessionId = sessionId};
-            IsValid(user, login.Password);
+            var user = await _userRepository.GetByUserNameAsync(login.UserName);
+            user.SessionId = sessionId;
+            var userDto = Mapper.Map<UserDto>(user);
 
-            await _userService.UpdateAsync(user);
+            IsValid(userDto, login.Password);
 
-            var jwtToken = await GenerateJwtToken(user);
+            await _sender.SendMessage(user, "UpdateUserQueue");
+
+            var jwtToken = await GenerateJwtToken(userDto);
             var tokenString = await GenerateRefreshToken();
-            var userInDb = Mapper.Map<User>(user);
             var refreshToken = new RefreshToken
             {
                 Id = Guid.NewGuid().ToString(),
                 DateCreated = DateTime.UtcNow,
                 DateExpires = DateTime.UtcNow.AddMinutes(_tokenConfiguration.RefreshTokenExpirationMinutes),
                 Token = tokenString,
-                User = userInDb
+                User = user
             };
 
             await _tokenRepository.CreateAsync(refreshToken);
-            UserAuthenticatedDto authenticatedDto = new(user, jwtToken, refreshToken.Token);
+            UserAuthenticatedDto authenticatedDto = new(userDto, jwtToken, refreshToken.Token);
             return Result<UserAuthenticatedDto>.Success(authenticatedDto);
         }
 
         public async Task<Result<UserAuthenticatedDto>> RefreshTokenAsync(string userId, TokenDto token,
             string sessionId)
         {
-            var user = (await _userService.GetAsync(userId)).Data with {SessionId = sessionId};
+            var user = await _userRepository.GetAsync(userId);
+            user.SessionId = sessionId;
+            var userDto = Mapper.Map<UserDto>(user);
+
             var refreshTokenInDb = await _tokenRepository.GetAsync(userId, token.Name);
 
             CheckForNull(refreshTokenInDb);
             IsValid(refreshTokenInDb);
 
-            await _userService.UpdateAsync(user);
+            await _sender.SendMessage(user, "UpdateUserQueue");
 
-            var jwtToken = await GenerateJwtToken(user);
+            var jwtToken = await GenerateJwtToken(userDto);
             var tokenString = await GenerateRefreshToken();
             var userInDb = Mapper.Map<User>(user);
             var refreshToken = new RefreshToken
@@ -97,14 +105,14 @@ namespace Warehouse.Api.Auth.Business
 
             await _tokenRepository.CreateAsync(refreshToken);
             await _tokenRepository.DeleteAsync(refreshTokenInDb.Id);
-            UserAuthenticatedDto authenticatedDto = new(user, jwtToken, refreshToken.Token);
+            UserAuthenticatedDto authenticatedDto = new(userDto, jwtToken, refreshToken.Token);
             return Result<UserAuthenticatedDto>.Success(authenticatedDto);
         }
 
         public async Task<Result<object>> LogoutAsync(string userId)
         {
-            var user = (await _userService.GetAsync(userId)).Data with {SessionId = null};
-            await _userService.UpdateAsync(user);
+            var user = await _userRepository.GetAsync(userId);
+            await _sender.SendMessage(user, "UpdateUserQueue");
             return Result<object>.Success();
         }
 

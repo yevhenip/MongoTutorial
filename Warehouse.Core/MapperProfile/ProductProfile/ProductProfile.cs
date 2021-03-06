@@ -18,8 +18,8 @@ namespace Warehouse.Core.MapperProfile.ProductProfile
                     => opt.MapFrom(p => p.DateOfReceipt))
                 .ForMember(p => p.Manufacturers, opt
                     => opt.MapFrom(p => p.Manufacturers))
-                .ForMember(p => p.User, opt
-                    => opt.MapFrom(p => p.User));
+                .ForMember(p => p.Customer, opt
+                    => opt.MapFrom(p => p.Customer));
 
             CreateMap<Product, ProductDto>()
                 .ForMember(p => p.Id, opt
@@ -30,8 +30,8 @@ namespace Warehouse.Core.MapperProfile.ProductProfile
                     => opt.MapFrom(p => p.DateOfReceipt))
                 .ForMember(p => p.Manufacturers, opt
                     => opt.MapFrom(p => p.Manufacturers))
-                .ForMember(p => p.User, opt
-                    => opt.MapFrom(p => p.User));
+                .ForMember(p => p.Customer, opt
+                    => opt.MapFrom(p => p.Customer));
 
             CreateMap<ProductModelDto, Product>()
                 .ForMember(p => p.Id, opt

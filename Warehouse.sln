@@ -19,6 +19,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Warehouse.Api.Users", "Ware
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Warehouse.Api.Manufacturers", "Warehouse.Api.Manufacturers\Warehouse.Api.Manufacturers.csproj", "{141E0500-D9BA-44DC-AA5C-B1711E96386F}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Warehouse.Api.Customers", "Warehouse.Api.Customers\Warehouse.Api.Customers.csproj", "{DB8FE063-F707-4090-B91B-A2E3F141E848}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -53,16 +55,20 @@ Global
 		{141E0500-D9BA-44DC-AA5C-B1711E96386F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{141E0500-D9BA-44DC-AA5C-B1711E96386F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{141E0500-D9BA-44DC-AA5C-B1711E96386F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DB8FE063-F707-4090-B91B-A2E3F141E848}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DB8FE063-F707-4090-B91B-A2E3F141E848}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DB8FE063-F707-4090-B91B-A2E3F141E848}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DB8FE063-F707-4090-B91B-A2E3F141E848}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
-		{BA7F7976-E11A-4293-9F71-D49DDA2F8DDE} = {5365AF49-9FC5-4C02-B592-DB225968A3EC}
 		{6288DCF4-0600-42B1-AA23-D7920EEBDF6E} = {5365AF49-9FC5-4C02-B592-DB225968A3EC}
 		{54A93589-1C15-43C9-A1E3-C26D9AE86115} = {5365AF49-9FC5-4C02-B592-DB225968A3EC}
 		{1D66BB9F-D59C-4ECD-937E-EEAE9FE6C364} = {5365AF49-9FC5-4C02-B592-DB225968A3EC}
 		{141E0500-D9BA-44DC-AA5C-B1711E96386F} = {5365AF49-9FC5-4C02-B592-DB225968A3EC}
+		{DB8FE063-F707-4090-B91B-A2E3F141E848} = {5365AF49-9FC5-4C02-B592-DB225968A3EC}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {66354A84-070D-4BD6-8512-901556CE00F2}

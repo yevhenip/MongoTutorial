@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using Warehouse.Core.Common;
 using Warehouse.Core.DTO.Product;
+using Warehouse.Domain;
 
 namespace Warehouse.Core.Interfaces.Services
 {
@@ -16,5 +17,10 @@ namespace Warehouse.Core.Interfaces.Services
         Task<Result<ProductDto>> UpdateAsync(string productId, ProductModelDto product);
 
         Task<Result<object>> DeleteAsync(string id);
+        Task DeleteManufacturerFromProductAsync(string manufacturerId);
+        Task UpdateManufacturerInProductsAsync(Manufacturer manufacturer);
+        Task DeleteCustomerFromProductAsync(string customerId);
+        Task CreateManufacturerAsync(Manufacturer manufacturer);
+        Task CreateCustomerAsync(Customer customer);
     }
 }

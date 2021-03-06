@@ -9,7 +9,6 @@ using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Options;
 using Warehouse.Core.Business;
 using Warehouse.Core.Common;
-using Warehouse.Core.DTO.Manufacturer;
 using Warehouse.Core.DTO.Product;
 using Warehouse.Core.Extensions;
 using Warehouse.Core.Interfaces.Repositories;
@@ -21,23 +20,23 @@ namespace Warehouse.Api.Products.Business
 {
     public class ProductService : ServiceBase<Product>, IProductService
     {
-        private readonly string _path = Directory.GetCurrentDirectory() + @"\wwwroot\Products\";
+        private readonly string _path = Directory.GetCurrentDirectory() + @"\..\Warehouse.Api\wwwroot\Products\";
         private readonly CacheManufacturerSettings _manufacturerSettings;
-        private readonly IManufacturerService _manufacturerService;
+        private readonly IManufacturerRepository _manufacturerRepository;
+        private readonly ICustomerRepository _customerRepository;
         private readonly IProductRepository _productRepository;
         private readonly CacheProductSettings _productSettings;
-        private readonly IUserRepository _userRepository;
 
-        public ProductService(IManufacturerService manufacturerService, IProductRepository productRepository,
+        public ProductService(IProductRepository productRepository,
             IDistributedCache distributedCache, IOptions<CacheProductSettings> productSettings,
-            IOptions<CacheManufacturerSettings> manufacturerSettings, IUserRepository userRepository, IMapper mapper)
-            : base(distributedCache, mapper)
+            IOptions<CacheManufacturerSettings> manufacturerSettings, ICustomerRepository customerRepository,
+            IMapper mapper, IManufacturerRepository manufacturerRepository) : base(distributedCache, mapper)
         {
             _manufacturerSettings = manufacturerSettings.Value;
-            _manufacturerService = manufacturerService;
+            _manufacturerRepository = manufacturerRepository;
+            _customerRepository = customerRepository;
             _productSettings = productSettings.Value;
             _productRepository = productRepository;
-            _userRepository = userRepository;
         }
 
         public async Task<Result<List<ProductDto>>> GetAllAsync()
@@ -71,7 +70,7 @@ namespace Warehouse.Api.Products.Business
                 return Result<ProductDto>.Success(product);
             }
 
-            productInDb = await FileExtensions.ReadFromFileAsync<Product>(_path, cacheKey + ".json");
+            productInDb = await FileExtensions.ReadFromFileAsync<Product>(_path, cacheKey);
             CheckForNull(productInDb);
 
             product = Mapper.Map<ProductDto>(productInDb);
@@ -82,11 +81,11 @@ namespace Warehouse.Api.Products.Business
 
         public async Task<Result<ProductDto>> CreateAsync(ProductModelDto product)
         {
-            var productToDb = await GetManufacturersAndUser(product, product.ManufacturerIds.ToList());
+            var productToDb = await GetManufacturersAndCustomer(product, product.ManufacturerIds.ToList());
 
             var cacheKey = $"Product-{productToDb.Id}";
             await DistributedCache.SetCacheAsync(cacheKey, productToDb, _productSettings);
-            await productToDb.WriteToFileAsync(_path, cacheKey + ".json");
+            await productToDb.WriteToFileAsync(_path, cacheKey);
             var result = Mapper.Map<ProductDto>(productToDb);
 
             await _productRepository.CreateAsync(productToDb);
@@ -100,17 +99,17 @@ namespace Warehouse.Api.Products.Business
             if (!await DistributedCache.IsExistsAsync(cacheKey))
             {
                 productInDb = await _productRepository.GetAsync(productId) ??
-                              await FileExtensions.ReadFromFileAsync<Product>(_path, cacheKey + ".json");
+                              await FileExtensions.ReadFromFileAsync<Product>(_path, cacheKey);
 
                 CheckForNull(productInDb);
             }
 
-            productInDb = await GetManufacturersAndUser(product, product.ManufacturerIds.ToList());
+            productInDb = await GetManufacturersAndCustomer(product, product.ManufacturerIds.ToList());
             productInDb.Id = productId;
             var result = Mapper.Map<ProductDto>(productInDb) with {Id = productId};
 
             await DistributedCache.SetCacheAsync(cacheKey, productInDb, _productSettings);
-            await productInDb.WriteToFileAsync(_path, cacheKey + ".json");
+            await productInDb.WriteToFileAsync(_path, cacheKey);
             await _productRepository.UpdateAsync(productInDb);
             return Result<ProductDto>.Success(result);
         }
@@ -126,15 +125,66 @@ namespace Warehouse.Api.Products.Business
 
             await _productRepository.DeleteAsync(id);
             await DistributedCache.RemoveAsync(cacheKey);
+            await FileExtensions.DeleteFileAsync(_path, cacheKey);
 
             return Result<object>.Success();
         }
 
-        private async Task<Product> GetManufacturersAndUser(ProductModelDto product,
+        public async Task DeleteManufacturerFromProductAsync(string manufacturerId)
+        {
+            var products = await _productRepository.GetRangeByManufacturerId(manufacturerId);
+            foreach (var product in products)
+            {
+                product.Manufacturers.RemoveAll(m => m.Id == manufacturerId);
+                await _productRepository.UpdateAsync(product);
+            }
+
+            await _manufacturerRepository.DeleteAsync(manufacturerId);
+        }
+
+        public async Task UpdateManufacturerInProductsAsync(Manufacturer manufacturer)
+        {
+            var products = await _productRepository.GetRangeByManufacturerId(manufacturer.Id);
+            foreach (var product in products)
+            {
+                await UpdateManufacturerInProductAsync(product, manufacturer.Id, manufacturer);
+            }
+
+            await _manufacturerRepository.UpdateAsync(manufacturer);
+        }
+
+        public async Task DeleteCustomerFromProductAsync(string customerId)
+        {
+            var product = await _productRepository.GetByCustomerId(customerId);
+            product.Customer = null;
+            await _productRepository.UpdateAsync(product);
+        }
+
+        public async Task CreateManufacturerAsync(Manufacturer manufacturer)
+        {
+            await _manufacturerRepository.CreateAsync(manufacturer);
+        }
+
+        public async Task CreateCustomerAsync(Customer customer)
+        {
+            await _customerRepository.CreateAsync(customer);
+        }
+
+        private async Task UpdateManufacturerInProductAsync(Product product, string manufacturerId,
+            Manufacturer manufacturer)
+        {
+            var manufacturers = product.Manufacturers.ToList();
+            manufacturers.RemoveAll(m => m.Id == manufacturerId);
+            manufacturers.Add(manufacturer);
+            product.Manufacturers = manufacturers;
+            await _productRepository.UpdateAsync(product);
+        }
+
+        private async Task<Product> GetManufacturersAndCustomer(ProductModelDto product,
             IReadOnlyCollection<string> manufacturerIds)
         {
             var manufacturersInDb = await GetManufacturers(manufacturerIds);
-            var userInDb = await _userRepository.GetAsync(product.UserId);
+            var customerInDb = await _customerRepository.GetAsync(product.CustomerId);
 
             if (manufacturerIds.Count != manufacturersInDb.Count)
             {
@@ -144,17 +194,16 @@ namespace Warehouse.Api.Products.Business
             }
 
             var productToDb = Mapper.Map<Product>(product);
-            var manufacturers = Mapper.Map<List<Manufacturer>>(manufacturersInDb);
-            var user = Mapper.Map<User>(userInDb);
-            productToDb.Manufacturers = manufacturers;
-            productToDb.User = user;
+            var customerToDb = Mapper.Map<Customer>(customerInDb);
+            productToDb.Manufacturers = manufacturersInDb;
+            productToDb.Customer = customerToDb;
 
             return productToDb;
         }
 
-        private async Task<List<ManufacturerDto>> GetManufacturers(IReadOnlyCollection<string> manufacturerIds)
+        private async Task<List<Manufacturer>> GetManufacturers(IReadOnlyCollection<string> manufacturerIds)
         {
-            List<ManufacturerDto> cachedManufacturers = new();
+            List<Manufacturer> cachedManufacturers = new();
             var notCachedManufacturerIds = manufacturerIds.ToList();
             foreach (var manufacturerId in manufacturerIds)
             {
@@ -163,13 +212,12 @@ namespace Warehouse.Api.Products.Business
                 if (cache is not null)
                 {
                     var cachedManufacturer = JsonSerializer.Deserialize<Manufacturer>(cache);
-                    cachedManufacturers.Add(Mapper.Map<ManufacturerDto>(cachedManufacturer));
+                    cachedManufacturers.Add(cachedManufacturer);
                     notCachedManufacturerIds.Remove(manufacturerId);
                 }
             }
 
-            var manufacturersInDb =
-                (await _manufacturerService.GetRangeAsync(notCachedManufacturerIds)).Data;
+            var manufacturersInDb = await _manufacturerRepository.GetRangeAsync(notCachedManufacturerIds);
 
             foreach (var manufacturerDto in manufacturersInDb)
             {

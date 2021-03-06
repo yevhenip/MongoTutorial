@@ -12,7 +12,7 @@ namespace Warehouse.Api.Auth.Data
 
         public RefreshTokenRepository(IMongoClient client)
         {
-            var db = client.GetDatabase("Warehouse");
+            var db = client.GetDatabase("Warehouse_refreshTokens");
             _tokenCollection = db.GetCollection<RefreshToken>("refreshTokens");
         }
 
@@ -45,6 +45,5 @@ namespace Warehouse.Api.Auth.Data
         {
             return _tokenCollection.FindOneAndDeleteAsync(p => p.Id == id);
         }
-        
     }
 }

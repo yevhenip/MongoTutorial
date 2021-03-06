@@ -16,7 +16,7 @@ namespace Warehouse.Api.Auth
         public override void ConfigureServices(IServiceCollection services)
         {
             base.ConfigureServices(services);
-            services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+            services.AddSingleton<IRefreshTokenRepository, RefreshTokenRepository>();
             services.AddScoped<IAuthService, AuthService>();
         }
     }

@@ -1,3 +1,4 @@
+using System.IO;
 using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -5,9 +6,12 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using MongoDB.Driver;
+using RabbitMQ.Client;
 using Warehouse.Api.Extensions;
 using Warehouse.Api.Common;
-using Warehouse.Core;
+using Warehouse.Api.Data;
+using Warehouse.Api.Messaging.Sender;
+using Warehouse.Core.Interfaces.Messaging.Sender;
 using Warehouse.Core.Interfaces.Repositories;
 using Warehouse.Core.MapperProfile.ProductProfile;
 using Warehouse.Core.Settings.CacheSettings;
@@ -23,12 +27,11 @@ namespace Warehouse.Api
         protected StartupBase(IWebHostEnvironment environment)
         {
             Environment = environment;
-
+            var path = Directory.GetCurrentDirectory();
             var builder = new ConfigurationBuilder()
                 .SetBasePath(Environment.ContentRootPath)
-                .AddJsonFile("/appsettings.json", true, true)
-                .AddJsonFile($"/appsettings.{Environment.EnvironmentName}.json", true);
-
+                .AddJsonFile(path + "/../Warehouse.Api/appsettings.json", true, true)
+                .AddJsonFile(path + $"/../Warehouse.Api/appsettings.{Environment.EnvironmentName}.json", true);
             builder.AddEnvironmentVariables();
 
             Configuration = builder.Build();
@@ -54,11 +57,20 @@ namespace Warehouse.Api
             services.AddSingleton<IMongoClient, MongoClient>(_ =>
                 new MongoClient(Configuration["Data:ConnectionString"]));
             services.AddScoped<ValidateTokenSessionId>();
-            services.AddScoped<IUserRepository, UserRepository>();
+            services.AddScoped<ISender, Sender>();
+            services.AddSingleton<IUserRepository, UserRepository>();
+
+            services.AddSingleton(_ => new ConnectionFactory
+            {
+                HostName = Configuration["RabbitMq:HostName"],
+                UserName = Configuration["RabbitMq:UserName"],
+                Password = Configuration["RabbitMq:Password"]
+            }.CreateConnection());
 
             services.Configure<CacheProductSettings>(Configuration.GetSection("Cache:CacheOptions:Product"));
             services.Configure<CacheManufacturerSettings>(Configuration.GetSection("Cache:CacheOptions:Manufacturer"));
             services.Configure<CacheUserSettings>(Configuration.GetSection("Cache:CacheOptions:User"));
+            services.Configure<CacheCustomerSettings>(Configuration.GetSection("Cache:CacheOptions:Customer"));
 
             services.AddJwtBearerAuthentication(Configuration);
         }

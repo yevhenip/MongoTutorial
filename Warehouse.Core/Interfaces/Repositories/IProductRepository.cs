@@ -17,5 +17,6 @@ namespace Warehouse.Core.Interfaces.Repositories
         Task DeleteAsync(string id);
 
         Task<List<Product>> GetRangeByManufacturerId(string manufacturerId);
+        Task<Product> GetByCustomerId(string customerId);
     }
 }

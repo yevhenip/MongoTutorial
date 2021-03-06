@@ -13,6 +13,6 @@ namespace Warehouse.Domain
 
         public List<Manufacturer> Manufacturers { get; set; }
 
-        public User User { get; set; }
+        public Customer Customer { get; set; }
     }
 }

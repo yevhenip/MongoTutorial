@@ -5,7 +5,7 @@ using MongoDB.Driver;
 using Warehouse.Core.Interfaces.Repositories;
 using Warehouse.Domain;
 
-namespace Warehouse.Core
+namespace Warehouse.Api.Data
 {
     public class UserRepository : IUserRepository
     {
@@ -13,7 +13,7 @@ namespace Warehouse.Core
 
         public UserRepository(IMongoClient client)
         {
-            var db = client.GetDatabase("Warehouse");
+            var db = client.GetDatabase("Warehouse_users");
             _userCollection = db.GetCollection<User>("users");
         }
 

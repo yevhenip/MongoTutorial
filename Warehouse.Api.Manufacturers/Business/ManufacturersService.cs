@@ -8,6 +8,7 @@ using Warehouse.Core.Business;
 using Warehouse.Core.Common;
 using Warehouse.Core.DTO.Manufacturer;
 using Warehouse.Core.Extensions;
+using Warehouse.Core.Interfaces.Messaging.Sender;
 using Warehouse.Core.Interfaces.Repositories;
 using Warehouse.Core.Interfaces.Services;
 using Warehouse.Core.Settings.CacheSettings;
@@ -17,18 +18,18 @@ namespace Warehouse.Api.Manufacturers.Business
 {
     public class ManufacturerService : ServiceBase<Manufacturer>, IManufacturerService
     {
-        private readonly string _path = Directory.GetCurrentDirectory() + @"\wwwroot\Manufacturers\";
+        private readonly string _path = Directory.GetCurrentDirectory() + @"\..\Warehouse.Api\wwwroot\Manufacturers\";
+        private readonly ISender _sender;
         private readonly CacheManufacturerSettings _manufacturerSettings;
         private readonly IManufacturerRepository _manufacturerRepository;
-        private readonly IProductRepository _productRepository;
 
         public ManufacturerService(IOptions<CacheManufacturerSettings> manufacturerSettings,
-            IManufacturerRepository manufacturerRepository, IProductRepository productRepository,
-            IDistributedCache distributedCache, IMapper mapper) : base(distributedCache, mapper)
+            IManufacturerRepository manufacturerRepository, IDistributedCache distributedCache, IMapper mapper,
+            ISender sender) : base(distributedCache, mapper)
         {
+            _sender = sender;
             _manufacturerSettings = manufacturerSettings.Value;
             _manufacturerRepository = manufacturerRepository;
-            _productRepository = productRepository;
         }
 
         public async Task<Result<List<ManufacturerDto>>> GetAllAsync()
@@ -70,7 +71,7 @@ namespace Warehouse.Api.Manufacturers.Business
                 return Result<ManufacturerDto>.Success(manufacturer);
             }
 
-            manufacturerInDb = await FileExtensions.ReadFromFileAsync<Manufacturer>(_path, cacheKey + ".json");
+            manufacturerInDb = await FileExtensions.ReadFromFileAsync<Manufacturer>(_path, cacheKey);
             CheckForNull(manufacturerInDb);
 
             await DistributedCache.SetCacheAsync(cacheKey, manufacturerInDb, _manufacturerSettings);
@@ -86,9 +87,10 @@ namespace Warehouse.Api.Manufacturers.Business
 
             var cacheKey = $"Manufacturer-{manufacturerToDb.Id}";
             await DistributedCache.SetCacheAsync(cacheKey, manufacturerToDb, _manufacturerSettings);
-            await manufacturerToDb.WriteToFileAsync(_path, cacheKey + ".json");
+            await manufacturerToDb.WriteToFileAsync(_path, cacheKey);
 
             await _manufacturerRepository.CreateAsync(manufacturerToDb);
+            await _sender.SendMessage(manufacturerToDb, "CreateManufacturerQueue");
             return Result<ManufacturerDto>.Success(manufacturerDto);
         }
 
@@ -99,7 +101,7 @@ namespace Warehouse.Api.Manufacturers.Business
             if (!await DistributedCache.IsExistsAsync(cacheKey))
             {
                 manufacturerInDb = await _manufacturerRepository.GetAsync(manufacturerId) ??
-                                   await FileExtensions.ReadFromFileAsync<Manufacturer>(_path, cacheKey + ".json");
+                                   await FileExtensions.ReadFromFileAsync<Manufacturer>(_path, cacheKey);
                 CheckForNull(manufacturerInDb);
             }
 
@@ -107,11 +109,10 @@ namespace Warehouse.Api.Manufacturers.Business
             manufacturerInDb = Mapper.Map<Manufacturer>(manufacturerDto);
 
             await _manufacturerRepository.UpdateAsync(manufacturerInDb);
-            await UpdateManufacturesInProduct(manufacturerInDb.Id, manufacturerInDb);
-
+            await _sender.SendMessage(manufacturerDto, "UpdateManufacturerQueue");
             await DistributedCache.UpdateAsync(cacheKey, manufacturerInDb);
             await _manufacturerRepository.UpdateAsync(manufacturerInDb);
-            await manufacturerInDb.WriteToFileAsync(_path, cacheKey + ".json");
+            await manufacturerInDb.WriteToFileAsync(_path, cacheKey);
 
             return Result<ManufacturerDto>.Success(manufacturerDto);
         }
@@ -125,27 +126,13 @@ namespace Warehouse.Api.Manufacturers.Business
                 CheckForNull(manufacturerInDb);
             }
 
-            await UpdateManufacturesInProduct(id);
+            await _sender.SendMessage(id, "DeleteManufacturerQueue");
             await _manufacturerRepository.DeleteAsync(id);
+            await FileExtensions.DeleteFileAsync(_path, cacheKey);
 
             await DistributedCache.RemoveAsync(cacheKey);
 
             return Result<object>.Success();
-        }
-
-        private async Task UpdateManufacturesInProduct(string id, Manufacturer manufacturer = null)
-        {
-            var products = await _productRepository.GetRangeByManufacturerId(id);
-            foreach (var product in products)
-            {
-                var manufacturers = product.Manufacturers;
-                manufacturers.RemoveAll(m => m.Id == id);
-
-                manufacturers.Add(manufacturer);
-                product.Manufacturers = manufacturers;
-
-                await _productRepository.UpdateAsync(product);
-            }
         }
     }
 }
