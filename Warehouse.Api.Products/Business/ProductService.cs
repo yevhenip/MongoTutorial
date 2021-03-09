@@ -27,10 +27,10 @@ namespace Warehouse.Api.Products.Business
         private readonly IProductRepository _productRepository;
         private readonly CacheProductSettings _productSettings;
 
-        public ProductService(IProductRepository productRepository,
-            IDistributedCache distributedCache, IOptions<CacheProductSettings> productSettings,
-            IOptions<CacheManufacturerSettings> manufacturerSettings, ICustomerRepository customerRepository,
-            IMapper mapper, IManufacturerRepository manufacturerRepository) : base(distributedCache, mapper)
+        public ProductService(IProductRepository productRepository, IDistributedCache distributedCache, 
+            IOptions<CacheProductSettings> productSettings, IOptions<CacheManufacturerSettings> manufacturerSettings, 
+            ICustomerRepository customerRepository, IMapper mapper, IManufacturerRepository manufacturerRepository, 
+            IFileService fileService) : base(distributedCache, mapper, fileService)
         {
             _manufacturerSettings = manufacturerSettings.Value;
             _manufacturerRepository = manufacturerRepository;
@@ -70,11 +70,10 @@ namespace Warehouse.Api.Products.Business
                 return Result<ProductDto>.Success(product);
             }
 
-            productInDb = await FileExtensions.ReadFromFileAsync<Product>(_path, cacheKey);
+            productInDb = await FileService.ReadFromFileAsync<Product>(_path, cacheKey);
             CheckForNull(productInDb);
 
             product = Mapper.Map<ProductDto>(productInDb);
-            await DistributedCache.SetCacheAsync(cacheKey, productInDb, _productSettings);
 
             return Result<ProductDto>.Success(product);
         }
@@ -85,7 +84,7 @@ namespace Warehouse.Api.Products.Business
 
             var cacheKey = $"Product-{productToDb.Id}";
             await DistributedCache.SetCacheAsync(cacheKey, productToDb, _productSettings);
-            await productToDb.WriteToFileAsync(_path, cacheKey);
+            await FileService.WriteToFileAsync(productToDb, _path, cacheKey);
             var result = Mapper.Map<ProductDto>(productToDb);
 
             await _productRepository.CreateAsync(productToDb);
@@ -99,7 +98,7 @@ namespace Warehouse.Api.Products.Business
             if (!await DistributedCache.IsExistsAsync(cacheKey))
             {
                 productInDb = await _productRepository.GetAsync(productId) ??
-                              await FileExtensions.ReadFromFileAsync<Product>(_path, cacheKey);
+                              await FileService.ReadFromFileAsync<Product>(_path, cacheKey);
 
                 CheckForNull(productInDb);
             }
@@ -109,7 +108,7 @@ namespace Warehouse.Api.Products.Business
             var result = Mapper.Map<ProductDto>(productInDb) with {Id = productId};
 
             await DistributedCache.SetCacheAsync(cacheKey, productInDb, _productSettings);
-            await productInDb.WriteToFileAsync(_path, cacheKey);
+            await FileService.WriteToFileAsync(productInDb, _path, cacheKey);
             await _productRepository.UpdateAsync(productInDb);
             return Result<ProductDto>.Success(result);
         }
@@ -125,7 +124,7 @@ namespace Warehouse.Api.Products.Business
 
             await _productRepository.DeleteAsync(id);
             await DistributedCache.RemoveAsync(cacheKey);
-            await FileExtensions.DeleteFileAsync(_path, cacheKey);
+            await FileService.DeleteFileAsync(_path, cacheKey);
 
             return Result<object>.Success();
         }

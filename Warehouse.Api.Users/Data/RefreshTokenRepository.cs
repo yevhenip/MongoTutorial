@@ -12,7 +12,7 @@ namespace Warehouse.Api.Users.Data
 
         public RefreshTokenRepository(IMongoClient client)
         {
-            var db = client.GetDatabase("Warehouse_users");
+            var db = client.GetDatabase("Users");
             _tokenCollection = db.GetCollection<RefreshToken>("refreshTokens");
         }
 

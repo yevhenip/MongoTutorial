@@ -11,8 +11,10 @@ using Warehouse.Api.Extensions;
 using Warehouse.Api.Common;
 using Warehouse.Api.Data;
 using Warehouse.Api.Messaging.Sender;
+using Warehouse.Core.Extensions;
 using Warehouse.Core.Interfaces.Messaging.Sender;
 using Warehouse.Core.Interfaces.Repositories;
+using Warehouse.Core.Interfaces.Services;
 using Warehouse.Core.MapperProfile.ProductProfile;
 using Warehouse.Core.Settings.CacheSettings;
 
@@ -58,6 +60,7 @@ namespace Warehouse.Api
                 new MongoClient(Configuration["Data:ConnectionString"]));
             services.AddScoped<ValidateTokenSessionId>();
             services.AddScoped<ISender, Sender>();
+            services.AddSingleton<IFileService, FileService>();
             services.AddSingleton<IUserRepository, UserRepository>();
 
             services.AddSingleton(_ => new ConnectionFactory

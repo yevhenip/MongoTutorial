@@ -25,8 +25,8 @@ namespace Warehouse.Api.Users.Business
         private readonly IUserRepository _userRepository;
 
         public UserService(IRefreshTokenRepository tokenRepository, IUserRepository userRepository,
-            IOptions<CacheUserSettings> userSettings,
-            IDistributedCache distributedCache, IMapper mapper) : base(distributedCache, mapper)
+            IOptions<CacheUserSettings> userSettings, IDistributedCache distributedCache, IMapper mapper,
+            IFileService fileService) : base(distributedCache, mapper, fileService)
         {
             _userSettings = userSettings.Value;
             _tokenRepository = tokenRepository;
@@ -63,10 +63,8 @@ namespace Warehouse.Api.Users.Business
                 return Result<UserDto>.Success(user);
             }
 
-            userInDb = await FileExtensions.ReadFromFileAsync<User>(_path, cacheKey);
+            userInDb = await FileService.ReadFromFileAsync<User>(_path, cacheKey);
             CheckForNull(userInDb);
-
-            await DistributedCache.SetCacheAsync(cacheKey, userInDb, _userSettings);
 
             user = Mapper.Map<UserDto>(userInDb);
 
@@ -92,7 +90,7 @@ namespace Warehouse.Api.Users.Business
 
             var cacheKey = $"User-{userToDb.Id}";
             await DistributedCache.SetCacheAsync(cacheKey, userToDb, _userSettings);
-            await userToDb.WriteToFileAsync(_path, cacheKey);
+            await FileService.WriteToFileAsync(userToDb, _path, cacheKey);
 
             return Result<UserDto>.Success(user);
         }
@@ -104,7 +102,7 @@ namespace Warehouse.Api.Users.Business
             if (!await DistributedCache.IsExistsAsync(cacheKey))
             {
                 userInDb = await _userRepository.GetAsync(userId) ??
-                           await FileExtensions.ReadFromFileAsync<User>(_path, cacheKey);
+                           await FileService.ReadFromFileAsync<User>(_path, cacheKey);
                 CheckForNull(userInDb);
             }
 
@@ -120,7 +118,7 @@ namespace Warehouse.Api.Users.Business
 
             await _userRepository.UpdateAsync(userInDb);
             await DistributedCache.UpdateAsync(cacheKey, userInDb);
-            await userInDb.WriteToFileAsync(_path, cacheKey);
+            await FileService.WriteToFileAsync(userInDb, _path, cacheKey);
 
             return Result<UserDto>.Success(userDto);
         }
@@ -131,7 +129,7 @@ namespace Warehouse.Api.Users.Business
 
             await _userRepository.UpdateAsync(user);
             await DistributedCache.UpdateAsync(cacheKey, user);
-            await user.WriteToFileAsync(_path, cacheKey);
+            await FileService.WriteToFileAsync(user, _path, cacheKey);
         }
 
         public async Task<Result<object>> DeleteAsync(string id)
@@ -151,7 +149,7 @@ namespace Warehouse.Api.Users.Business
 
             await _userRepository.DeleteAsync(id);
             await DistributedCache.RemoveAsync(cacheKey);
-            await FileExtensions.DeleteFileAsync(_path, cacheKey);
+            await FileService.DeleteFileAsync(_path, cacheKey);
 
             return Result<object>.Success();
         }

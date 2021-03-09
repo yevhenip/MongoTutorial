@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using AutoMapper;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Options;
+using Warehouse.Api.Extensions;
 using Warehouse.Core.Business;
 using Warehouse.Core.Common;
 using Warehouse.Core.DTO.Customer;
@@ -24,7 +25,8 @@ namespace Warehouse.Api.Customers.Business
         private readonly ISender _sender;
 
         public CustomerService(IOptions<CacheCustomerSettings> customerSettings, ICustomerRepository customerRepository,
-            IDistributedCache distributedCache, IMapper mapper, ISender sender) : base(distributedCache, mapper)
+            IDistributedCache distributedCache, IMapper mapper, ISender sender, IFileService fileService) : 
+            base(distributedCache, mapper, fileService)
         {
             _customerSettings = customerSettings.Value;
             _customerRepository = customerRepository;
@@ -62,10 +64,9 @@ namespace Warehouse.Api.Customers.Business
                 return Result<CustomerDto>.Success(customer);
             }
 
-            customerInDb = await FileExtensions.ReadFromFileAsync<Customer>(_path, cacheKey);
+            customerInDb = await FileService.ReadFromFileAsync<Customer>(_path, cacheKey);
             CheckForNull(customerInDb);
 
-            await DistributedCache.SetCacheAsync(cacheKey, customerInDb, _customerSettings);
             customer = Mapper.Map<CustomerDto>(customerInDb);
 
             return Result<CustomerDto>.Success(customer);
@@ -80,9 +81,9 @@ namespace Warehouse.Api.Customers.Business
                 CheckForNull(customerInDb);
             }
 
-            await _sender.SendMessage(id, "DeleteCustomerQueue");
+            await _sender.SendMessage(id, Queues.DeleteCustomerQueue);
             await DistributedCache.RemoveAsync(cacheKey);
-            await FileExtensions.DeleteFileAsync(_path, cacheKey);
+            await FileService.DeleteFileAsync(_path, cacheKey);
 
             return Result<object>.Success();
         }
@@ -95,10 +96,10 @@ namespace Warehouse.Api.Customers.Business
 
             var cacheKey = $"Customer-{customerToDb.Id}";
             await DistributedCache.SetCacheAsync(cacheKey, customerToDb, _customerSettings);
-            await customerToDb.WriteToFileAsync(_path, cacheKey);
+            await FileService.WriteToFileAsync(customerToDb, _path, cacheKey);
 
             await _customerRepository.CreateAsync(customerToDb);
-            await _sender.SendMessage(customerToDb, "CreateCustomerQueue");
+            await _sender.SendMessage(customerToDb, Queues.CreateCustomerQueue);
             return Result<CustomerDto>.Success(customerDto);
         }
     }

@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using AutoMapper;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Options;
+using Warehouse.Api.Extensions;
 using Warehouse.Core.Business;
 using Warehouse.Core.Common;
 using Warehouse.Core.DTO.Manufacturer;
@@ -25,7 +26,7 @@ namespace Warehouse.Api.Manufacturers.Business
 
         public ManufacturerService(IOptions<CacheManufacturerSettings> manufacturerSettings,
             IManufacturerRepository manufacturerRepository, IDistributedCache distributedCache, IMapper mapper,
-            ISender sender) : base(distributedCache, mapper)
+            ISender sender, IFileService fileService) : base(distributedCache, mapper, fileService)
         {
             _sender = sender;
             _manufacturerSettings = manufacturerSettings.Value;
@@ -71,10 +72,9 @@ namespace Warehouse.Api.Manufacturers.Business
                 return Result<ManufacturerDto>.Success(manufacturer);
             }
 
-            manufacturerInDb = await FileExtensions.ReadFromFileAsync<Manufacturer>(_path, cacheKey);
+            manufacturerInDb = await FileService.ReadFromFileAsync<Manufacturer>(_path, cacheKey);
             CheckForNull(manufacturerInDb);
 
-            await DistributedCache.SetCacheAsync(cacheKey, manufacturerInDb, _manufacturerSettings);
             manufacturer = Mapper.Map<ManufacturerDto>(manufacturerInDb);
 
             return Result<ManufacturerDto>.Success(manufacturer);
@@ -87,10 +87,10 @@ namespace Warehouse.Api.Manufacturers.Business
 
             var cacheKey = $"Manufacturer-{manufacturerToDb.Id}";
             await DistributedCache.SetCacheAsync(cacheKey, manufacturerToDb, _manufacturerSettings);
-            await manufacturerToDb.WriteToFileAsync(_path, cacheKey);
+            await FileService.WriteToFileAsync(manufacturerToDb, _path, cacheKey);
 
             await _manufacturerRepository.CreateAsync(manufacturerToDb);
-            await _sender.SendMessage(manufacturerToDb, "CreateManufacturerQueue");
+            await _sender.SendMessage(manufacturerToDb, Queues.CreateManufacturerQueue);
             return Result<ManufacturerDto>.Success(manufacturerDto);
         }
 
@@ -101,7 +101,7 @@ namespace Warehouse.Api.Manufacturers.Business
             if (!await DistributedCache.IsExistsAsync(cacheKey))
             {
                 manufacturerInDb = await _manufacturerRepository.GetAsync(manufacturerId) ??
-                                   await FileExtensions.ReadFromFileAsync<Manufacturer>(_path, cacheKey);
+                                   await FileService.ReadFromFileAsync<Manufacturer>(_path, cacheKey);
                 CheckForNull(manufacturerInDb);
             }
 
@@ -109,10 +109,10 @@ namespace Warehouse.Api.Manufacturers.Business
             manufacturerInDb = Mapper.Map<Manufacturer>(manufacturerDto);
 
             await _manufacturerRepository.UpdateAsync(manufacturerInDb);
-            await _sender.SendMessage(manufacturerDto, "UpdateManufacturerQueue");
+            await _sender.SendMessage(manufacturerDto, Queues.UpdateManufacturerQueue);
             await DistributedCache.UpdateAsync(cacheKey, manufacturerInDb);
             await _manufacturerRepository.UpdateAsync(manufacturerInDb);
-            await manufacturerInDb.WriteToFileAsync(_path, cacheKey);
+            await FileService.WriteToFileAsync(manufacturerInDb, _path, cacheKey);
 
             return Result<ManufacturerDto>.Success(manufacturerDto);
         }
@@ -126,9 +126,9 @@ namespace Warehouse.Api.Manufacturers.Business
                 CheckForNull(manufacturerInDb);
             }
 
-            await _sender.SendMessage(id, "DeleteManufacturerQueue");
+            await _sender.SendMessage(id, Queues.DeleteManufacturerQueue);
             await _manufacturerRepository.DeleteAsync(id);
-            await FileExtensions.DeleteFileAsync(_path, cacheKey);
+            await FileService.DeleteFileAsync(_path, cacheKey);
 
             await DistributedCache.RemoveAsync(cacheKey);
 

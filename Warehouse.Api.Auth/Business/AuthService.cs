@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using Warehouse.Api.Extensions;
 using Warehouse.Core.Business;
 using Warehouse.Core.Common;
 using Warehouse.Core.DTO.Auth;
@@ -32,8 +33,8 @@ namespace Warehouse.Api.Auth.Business
         private readonly ISender _sender;
 
         public AuthService(IOptions<JwtTokenConfiguration> tokenConfiguration, IRefreshTokenRepository tokenRepository,
-            IDistributedCache distributedCache, IMapper mapper, IUserRepository userRepository, ISender sender) : base(distributedCache,
-            mapper)
+            IDistributedCache distributedCache, IMapper mapper, IUserRepository userRepository, ISender sender) :
+            base(distributedCache, mapper, null)
         {
             _tokenConfiguration = tokenConfiguration.Value;
             _userRepository = userRepository;
@@ -47,7 +48,7 @@ namespace Warehouse.Api.Auth.Business
             var user = Mapper.Map<UserDto>(register);
             var hashedPassword = _hasher.HashPassword(user, register.Password);
             user = user with {PasswordHash = hashedPassword, Roles = new List<string> {"User"}};
-            await _sender.SendMessage(user, "CreateUserQueue");
+            await _sender.SendMessage(user, Queues.CreateUserQueue);
             return Result<UserDto>.Success(user);
         }
 
@@ -59,10 +60,10 @@ namespace Warehouse.Api.Auth.Business
 
             IsValid(userDto, login.Password);
 
-            await _sender.SendMessage(user, "UpdateUserQueue");
+            await _sender.SendMessage(user, Queues.UpdateUserQueue);
 
-            var jwtToken = await GenerateJwtToken(userDto);
-            var tokenString = await GenerateRefreshToken();
+            var jwtToken = GenerateJwtToken(userDto);
+            var tokenString = GenerateRefreshToken();
             var refreshToken = new RefreshToken
             {
                 Id = Guid.NewGuid().ToString(),
@@ -89,10 +90,10 @@ namespace Warehouse.Api.Auth.Business
             CheckForNull(refreshTokenInDb);
             IsValid(refreshTokenInDb);
 
-            await _sender.SendMessage(user, "UpdateUserQueue");
+            await _sender.SendMessage(user, Queues.UpdateUserQueue);
 
-            var jwtToken = await GenerateJwtToken(userDto);
-            var tokenString = await GenerateRefreshToken();
+            var jwtToken = GenerateJwtToken(userDto);
+            var tokenString = GenerateRefreshToken();
             var userInDb = Mapper.Map<User>(user);
             var refreshToken = new RefreshToken
             {
@@ -112,7 +113,7 @@ namespace Warehouse.Api.Auth.Business
         public async Task<Result<object>> LogoutAsync(string userId)
         {
             var user = await _userRepository.GetAsync(userId);
-            await _sender.SendMessage(user, "UpdateUserQueue");
+            await _sender.SendMessage(user, Queues.UpdateUserQueue);
             return Result<object>.Success();
         }
 
@@ -133,7 +134,7 @@ namespace Warehouse.Api.Auth.Business
             }
         }
 
-        private Task<string> GenerateJwtToken(UserDto user)
+        private string GenerateJwtToken(UserDto user)
         {
             List<Claim> claims = new()
             {
@@ -153,15 +154,15 @@ namespace Warehouse.Api.Auth.Business
                     new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_tokenConfiguration.Secret)),
                     SecurityAlgorithms.HmacSha256Signature));
 
-            return Task.FromResult(new JwtSecurityTokenHandler().WriteToken(jwtToken));
+            return new JwtSecurityTokenHandler().WriteToken(jwtToken);
         }
 
-        private static Task<string> GenerateRefreshToken()
+        private static string GenerateRefreshToken()
         {
             var randomNumber = new byte[32];
             using var rng = RandomNumberGenerator.Create();
             rng.GetBytes(randomNumber);
-            return Task.FromResult(Convert.ToBase64String(randomNumber));
+            return Convert.ToBase64String(randomNumber);
         }
     }
 }

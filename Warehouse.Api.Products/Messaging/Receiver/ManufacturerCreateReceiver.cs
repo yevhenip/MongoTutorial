@@ -1,5 +1,6 @@
 ﻿using System.Threading.Tasks;
 using RabbitMQ.Client;
+using Warehouse.Api.Extensions;
 using Warehouse.Api.Messaging.Receiver;
 using Warehouse.Core.Interfaces.Services;
 using Warehouse.Domain;
@@ -8,7 +9,7 @@ namespace Warehouse.Api.Products.Messaging.Receiver
 {
     public class ManufacturerCreateReceiver : Receiver<Manufacturer>
     {
-        private const string Queue = "CreateManufacturerQueue";
+        private const string Queue = Queues.CreateManufacturerQueue;
         private readonly IProductService _productService;
         
         public ManufacturerCreateReceiver(IProductService productService, IConnection connection) : base(connection,

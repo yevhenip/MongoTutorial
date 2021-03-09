@@ -13,7 +13,7 @@ namespace Warehouse.Api.Customers.Data
 
         public CustomerRepository(IMongoClient client)
         {
-            var db = client.GetDatabase("Warehouse_customers");
+            var db = client.GetDatabase("Customers");
             _customerCollection = db.GetCollection<Customer>("customers");
         }
         public Task<List<Customer>> GetAllAsync()
