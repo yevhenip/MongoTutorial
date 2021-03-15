@@ -29,18 +29,18 @@ namespace Warehouse.Api.Auth.Business
         private readonly JwtTokenConfiguration _tokenConfiguration;
         private readonly IRefreshTokenRepository _tokenRepository;
         private readonly IUserRepository _userRepository;
-        private readonly PasswordHasher<UserDto> _hasher;
+        private readonly IPasswordHasher<UserDto> _hasher;
         private readonly ISender _sender;
 
         public AuthService(IOptions<JwtTokenConfiguration> tokenConfiguration, IRefreshTokenRepository tokenRepository,
-            IDistributedCache distributedCache, IMapper mapper, IUserRepository userRepository, ISender sender) :
-            base(distributedCache, mapper, null)
+            IDistributedCache distributedCache, IMapper mapper, IUserRepository userRepository, ISender sender,
+            IPasswordHasher<UserDto> hasher) : base(distributedCache, mapper, null)
         {
             _tokenConfiguration = tokenConfiguration.Value;
             _userRepository = userRepository;
             _tokenRepository = tokenRepository;
             _sender = sender;
-            _hasher = new();
+            _hasher = hasher;
         }
 
         public async Task<Result<UserDto>> RegisterAsync(RegisterDto register)
@@ -55,6 +55,11 @@ namespace Warehouse.Api.Auth.Business
         public async Task<Result<UserAuthenticatedDto>> LoginAsync(LoginDto login, string sessionId)
         {
             var user = await _userRepository.GetByUserNameAsync(login.UserName);
+            if (user == null)
+            {
+                throw Result<User>.Failure("userName", "Invalid userName");
+            }
+
             user.SessionId = sessionId;
             var userDto = Mapper.Map<UserDto>(user);
 
@@ -113,6 +118,10 @@ namespace Warehouse.Api.Auth.Business
         public async Task<Result<object>> LogoutAsync(string userId)
         {
             var user = await _userRepository.GetAsync(userId);
+            if (user == null)
+            {
+                throw Result<User>.Failure("id", "Invalid id");
+            }
             await _sender.SendMessage(user, Queues.UpdateUserQueue);
             return Result<object>.Success();
         }
