@@ -4,14 +4,14 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Caching.Distributed;
 using Warehouse.Core.Settings.CacheSettings;
 
-namespace Warehouse.Core.Extensions
+namespace Warehouse.Api.Extensions
 {
     public static class CacheExtensions
     {
         public static bool TryGetValue<T>(this string serializedCache, out T cache)
         {
             cache = default;
-            if (serializedCache == null)
+            if (string.IsNullOrEmpty(serializedCache))
             {
                 return false;
             }
@@ -35,7 +35,7 @@ namespace Warehouse.Core.Extensions
         public static async Task<bool> IsExistsAsync(this IDistributedCache distributedCache, string cacheKey)
         {
             var cache = await distributedCache.GetStringAsync(cacheKey);
-            return cache is not null;
+            return !string.IsNullOrEmpty(cache);
         }
 
         public static async Task UpdateAsync<T>(this IDistributedCache distributedCache, string cacheKey, T item)

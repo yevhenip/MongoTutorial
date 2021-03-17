@@ -4,7 +4,7 @@ using Microsoft.Extensions.Caching.Distributed;
 using Warehouse.Core.Common;
 using Warehouse.Core.Interfaces.Services;
 
-namespace Warehouse.Core.Business
+namespace Warehouse.Api.Business
 {
     public abstract class ServiceBase<T> where T : class
     {

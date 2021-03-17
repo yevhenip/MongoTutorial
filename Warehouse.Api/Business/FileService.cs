@@ -4,7 +4,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using Warehouse.Core.Interfaces.Services;
 
-namespace Warehouse.Core.Extensions
+namespace Warehouse.Api.Business
 {
     public class FileService : IFileService
     {

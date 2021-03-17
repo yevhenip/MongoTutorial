@@ -20,7 +20,7 @@ using Warehouse.Core.Interfaces.Services;
 using Warehouse.Core.Settings;
 using Warehouse.Domain;
 
-namespace Warehouse.Tests
+namespace Warehouse.Api.Auth.Tests.Business
 {
     [TestFixture]
     public class AuthServiceTests
@@ -145,7 +145,7 @@ namespace Warehouse.Tests
         {
             LoginDto login = new("a", "a");
 
-            _userRepository.Setup(ur => ur.GetByUserNameAsync(_user.UserName)).Returns(Task.FromResult(user));
+            _userRepository.Setup(ur => ur.GetByUserNameAsync(_user.UserName)).ReturnsAsync(user);
             _mapper.Setup(m => m.Map<UserDto>(_userFromDb)).Returns(_user);
             _hasher.Setup(h => h.VerifyHashedPassword(_user, _user.PasswordHash, login.Password))
                 .Returns(result);
@@ -157,7 +157,7 @@ namespace Warehouse.Tests
         {
             TokenDto token = new("a");
 
-            _userRepository.Setup(ur => ur.GetAsync(_user.UserName)).Returns(Task.FromResult(_userFromDb));
+            _userRepository.Setup(ur => ur.GetAsync(_user.UserName)).ReturnsAsync(_userFromDb);
             _tokenRepository.Setup(tr => tr.GetAsync(_user.Id, token.Name)).ReturnsAsync(new RefreshToken
             {
                 Token = token.Name,
@@ -173,7 +173,7 @@ namespace Warehouse.Tests
         private string ConfigureLogoutTests(User user)
         {
             const string id = "a";
-            _userRepository.Setup(ur => ur.GetAsync(id)).Returns(Task.FromResult(user));
+            _userRepository.Setup(ur => ur.GetAsync(id)).ReturnsAsync(user);
             return id;
         }
 
