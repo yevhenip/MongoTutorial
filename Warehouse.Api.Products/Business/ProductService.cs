@@ -7,10 +7,10 @@ using System.Threading.Tasks;
 using AutoMapper;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Options;
-using Warehouse.Core.Business;
+using Warehouse.Api.Business;
+using Warehouse.Api.Extensions;
 using Warehouse.Core.Common;
 using Warehouse.Core.DTO.Product;
-using Warehouse.Core.Extensions;
 using Warehouse.Core.Interfaces.Repositories;
 using Warehouse.Core.Interfaces.Services;
 using Warehouse.Core.Settings.CacheSettings;
@@ -208,7 +208,7 @@ namespace Warehouse.Api.Products.Business
             {
                 var cacheKey = $"Manufacturer-{manufacturerId}";
                 var cache = await DistributedCache.GetStringAsync(cacheKey);
-                if (cache is not null)
+                if (!string.IsNullOrEmpty(cache))
                 {
                     var cachedManufacturer = JsonSerializer.Deserialize<Manufacturer>(cache);
                     cachedManufacturers.Add(cachedManufacturer);

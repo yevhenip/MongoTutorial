@@ -1,7 +1,9 @@
 ﻿using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
 using Warehouse.Api.Auth.Business;
 using Warehouse.Api.Auth.Data;
+using Warehouse.Core.DTO.Users;
 using Warehouse.Core.Interfaces.Repositories;
 using Warehouse.Core.Interfaces.Services;
 
@@ -17,6 +19,7 @@ namespace Warehouse.Api.Auth
         {
             base.ConfigureServices(services);
             services.AddSingleton<IRefreshTokenRepository, RefreshTokenRepository>();
+            services.AddSingleton<IPasswordHasher<UserDto>>(new PasswordHasher<UserDto>());
             services.AddScoped<IAuthService, AuthService>();
         }
     }
