@@ -21,12 +21,19 @@ namespace Warehouse.Api.Messaging.Receiver
             InitializeRabbitMqListener();
         }
 
+        /// <summary>
+        /// Initializing channel
+        /// </summary>
         private void InitializeRabbitMqListener()
         {
             _channel = _connection.CreateModel();
             _channel.QueueDeclare(_queue, false, false, true, null);
         }
 
+        /// <summary>
+        /// Defines receiving of message 
+        /// </summary>
+        /// <param name="stoppingToken"></param>
         protected override Task ExecuteAsync(CancellationToken stoppingToken)
         {
             stoppingToken.ThrowIfCancellationRequested();
@@ -46,8 +53,15 @@ namespace Warehouse.Api.Messaging.Receiver
             return Task.CompletedTask;
         }
 
+        /// <summary>
+        /// Does needed operation with received data
+        /// </summary>
+        /// <param name="item"></param>
         protected abstract Task HandleMessage(T item);
 
+        /// <summary>
+        /// Closes all connections
+        /// </summary>
         ~Receiver()
         {
             _channel.Close();

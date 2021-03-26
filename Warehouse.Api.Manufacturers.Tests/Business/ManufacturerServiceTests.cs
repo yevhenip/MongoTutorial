@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using AutoMapper;
 using Microsoft.Extensions.Caching.Distributed;
@@ -135,16 +134,6 @@ namespace Warehouse.Api.Manufacturers.Tests.Business
             Assert.That(result.Data, Is.EqualTo(null));
         }
 
-        [Test]
-        public async Task GetRangeAsync_WhenCalled_ReturnsListOfManufacturers()
-        {
-            var (manufacturers, manufacturerIds) = ConfigureGetRange();
-
-            var result = await _manufacturerService.GetRangeAsync(manufacturerIds);
-
-            Assert.That(result.Data, Is.EqualTo(manufacturers));
-        }
-
         private List<ManufacturerDto> ConfigureGetAll()
         {
             List<ManufacturerDto> manufacturers = new() {_manufacturer};
@@ -184,17 +173,6 @@ namespace Warehouse.Api.Manufacturers.Tests.Business
         private void ConfigureDelete(Manufacturer manufacturer)
         {
             _manufacturerRepository.Setup(ur => ur.GetAsync(_dbManufacturer.Id)).ReturnsAsync(manufacturer);
-        }
-
-        private (List<ManufacturerDto>, IEnumerable<string>) ConfigureGetRange()
-        {
-            List<ManufacturerDto> manufacturers = new() {_manufacturer};
-            List<Manufacturer> manufacturersFromDb = new() {_dbManufacturer};
-            var manufacturerIds = manufacturers.Select(m => m.Id);
-            _manufacturerRepository.Setup(ur => ur.GetRangeAsync(manufacturerIds))
-                .ReturnsAsync(manufacturersFromDb);
-            _mapper.Setup(m => m.Map<List<ManufacturerDto>>(manufacturersFromDb)).Returns(manufacturers);
-            return (manufacturers, manufacturerIds);
         }
     }
 }

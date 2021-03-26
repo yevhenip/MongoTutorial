@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using MongoDB.Driver;
 using Warehouse.Core.Interfaces.Repositories;
@@ -31,19 +30,9 @@ namespace Warehouse.Api.Products.Data
             return _customerCollection.InsertOneAsync(customer);
         }
 
-        public Task UpdateAsync(Customer customer)
-        {
-            return _customerCollection.ReplaceOneAsync(p => p.Id == customer.Id, customer);
-        }
-
         public Task DeleteAsync(string id)
         {
             return _customerCollection.FindOneAndDeleteAsync(p => p.Id == id);
-        }
-
-        public Task<List<Customer>> GetRangeAsync(IEnumerable<string> customerIds)
-        {
-            return _customerCollection.Find(m => customerIds.Contains(m.Id)).ToListAsync();
         }
     }
 }

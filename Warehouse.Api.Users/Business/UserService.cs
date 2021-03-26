@@ -71,16 +71,6 @@ namespace Warehouse.Api.Users.Business
             return Result<UserDto>.Success(user);
         }
 
-        public async Task<Result<UserDto>> GetByUserNameAsync(string userName)
-        {
-            var userInDb = await _userRepository.GetByUserNameAsync(userName);
-            CheckForNull(userInDb);
-
-            var user = Mapper.Map<UserDto>(userInDb);
-
-            return Result<UserDto>.Success(user);
-        }
-
         public async Task<Result<UserDto>> CreateAsync(UserDto user)
         {
             await IsValid(user);
@@ -152,14 +142,6 @@ namespace Warehouse.Api.Users.Business
             await FileService.DeleteFileAsync(_path, cacheKey);
 
             return Result<object>.Success();
-        }
-
-        public async Task<Result<List<UserDto>>> GetRangeByRoleAsync(string roleName)
-        {
-            var usersInDb = await _userRepository.GetRangeByRoleAsync(roleName);
-            var users = Mapper.Map<List<UserDto>>(usersInDb);
-
-            return Result<List<UserDto>>.Success(users);
         }
 
         private async Task IsValid(UserDto user)

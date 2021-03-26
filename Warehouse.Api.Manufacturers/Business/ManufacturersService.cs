@@ -40,15 +40,6 @@ namespace Warehouse.Api.Manufacturers.Business
             return Result<List<ManufacturerDto>>.Success(manufacturers);
         }
 
-        public async Task<Result<List<ManufacturerDto>>> GetRangeAsync(IEnumerable<string> manufacturerIds)
-        {
-            var manufacturersInDb =
-                await _manufacturerRepository.GetRangeAsync(manufacturerIds);
-            var manufacturers = Mapper.Map<List<ManufacturerDto>>(manufacturersInDb);
-
-            return Result<List<ManufacturerDto>>.Success(manufacturers);
-        }
-
         public async Task<Result<ManufacturerDto>> GetAsync(string id)
         {
             var cacheKey = $"Manufacturer-{id}";

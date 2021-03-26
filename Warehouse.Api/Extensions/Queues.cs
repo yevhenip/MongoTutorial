@@ -1,5 +1,8 @@
 ﻿namespace Warehouse.Api.Extensions
 {
+    /// <summary>
+    /// Defines queues
+    /// </summary>
     public static class Queues
     {
         public const string CreateManufacturerQueue = "CreateManufacturerQueue";

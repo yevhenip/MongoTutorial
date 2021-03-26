@@ -17,6 +17,10 @@ namespace Warehouse.Api.Customers.Controllers.v1
             _customerService = customerService;
         }
         
+        /// <summary>
+        /// Gets all customers
+        /// </summary>
+        /// <returns>List of customers</returns>
         [HttpGet]
         public async Task<IActionResult> GetAllAsync()
         {
@@ -24,6 +28,11 @@ namespace Warehouse.Api.Customers.Controllers.v1
             return Ok(result.Data);
         }
 
+        /// <summary>
+        /// Gets customer based on provided id
+        /// </summary>
+        /// <param name="customerId"></param>
+        /// <returns>Customer</returns>
         [HttpGet("{customerId}")]
         public async Task<IActionResult> GetAsync([FromRoute] string customerId)
         {
@@ -31,6 +40,11 @@ namespace Warehouse.Api.Customers.Controllers.v1
             return Ok(result.Data);
         }
 
+        /// <summary>
+        /// Creates customer
+        /// </summary>
+        /// <param name="customer"></param>
+        /// <returns>Created customer</returns>
         [Authorize(Roles = "Admin")]
         [HttpPost]
         public async Task<IActionResult> CreateAsync([FromBody] CustomerDto customer)
@@ -39,6 +53,10 @@ namespace Warehouse.Api.Customers.Controllers.v1
             return Ok(result.Data);
         }
         
+        /// <summary>
+        /// Deletes customer
+        /// </summary>
+        /// <param name="customerId"></param>
         [Authorize(Roles = "Admin")]
         [HttpDelete("{customerId}")]
         public async Task<IActionResult> DeleteAsync([FromRoute] string customerId)

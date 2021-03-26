@@ -157,6 +157,7 @@ namespace Warehouse.Api.Products.Business
             var product = await _productRepository.GetByCustomerId(customerId);
             product.Customer = null;
             await _productRepository.UpdateAsync(product);
+            await _customerRepository.DeleteAsync(customerId);
         }
 
         public async Task CreateManufacturerAsync(Manufacturer manufacturer)

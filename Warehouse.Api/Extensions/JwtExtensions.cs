@@ -9,6 +9,9 @@ using Warehouse.Core.Settings;
 
 namespace Warehouse.Api.Extensions
 {
+    /// <summary>
+    /// Registers custom authentication with jwt token and gets jwt configuration
+    /// </summary>
     public static class JwtExtensions
     {
         public static void AddJwtBearerAuthentication(this IServiceCollection services, IConfiguration configuration)

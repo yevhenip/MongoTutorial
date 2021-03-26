@@ -19,6 +19,11 @@ namespace Warehouse.Api.Business
             Mapper = mapper;
         }
 
+        /// <summary>
+        /// Checks item fo being null and throws exception if it is true
+        /// </summary>
+        /// <param name="item"></param>
+        /// <exception cref="Result"></exception>
         protected void CheckForNull(T item)
         {
             if (item == null)

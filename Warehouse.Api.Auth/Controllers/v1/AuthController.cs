@@ -17,6 +17,11 @@ namespace Warehouse.Api.Auth.Controllers.v1
             _authService = authService;
         }
 
+        /// <summary>
+        /// Registers user
+        /// </summary>
+        /// <param name="register"></param>
+        /// <returns>Created user</returns>
         [HttpPost("[action]")]
         public async Task<IActionResult> Register(RegisterDto register)
         {
@@ -24,6 +29,11 @@ namespace Warehouse.Api.Auth.Controllers.v1
             return Ok(result.Data);
         }
 
+        /// <summary>
+        /// Logins user
+        /// </summary>
+        /// <param name="login"></param>
+        /// <returns>Authenticated user with bearer and refresh tokens</returns>
         [HttpPost("[action]")]
         public async Task<IActionResult> Login(LoginDto login)
         {
@@ -32,6 +42,11 @@ namespace Warehouse.Api.Auth.Controllers.v1
             return Ok(result.Data);
         }
 
+        /// <summary>
+        /// Refreshes user's session
+        /// </summary>
+        /// <param name="token"></param>
+        /// <returns>Authenticated user with bearer and refresh tokens</returns>
         [HttpPost("[action]")]
         public async Task<IActionResult> RefreshToken(TokenDto token)
         {
@@ -41,6 +56,9 @@ namespace Warehouse.Api.Auth.Controllers.v1
             return Ok(result.Data);
         }
 
+        /// <summary>
+        /// Logouts user invalidating bearer token
+        /// </summary>
         [HttpPost("[action]")]
         public async Task Logout()
         {

@@ -122,6 +122,8 @@ namespace Warehouse.Api.Auth.Business
             {
                 throw Result<User>.Failure("id", "Invalid id");
             }
+
+            user.SessionId = null;
             await _sender.SendMessage(user, Queues.UpdateUserQueue);
             return Result<object>.Success();
         }

@@ -83,6 +83,7 @@ namespace Warehouse.Api.Customers.Business
             await _sender.SendMessage(id, Queues.DeleteCustomerQueue);
             await DistributedCache.RemoveAsync(cacheKey);
             await FileService.DeleteFileAsync(_path, cacheKey);
+            await _customerRepository.DeleteAsync(id);
 
             return Result<object>.Success();
         }

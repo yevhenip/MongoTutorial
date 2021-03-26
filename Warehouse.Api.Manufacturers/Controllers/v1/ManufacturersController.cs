@@ -17,6 +17,10 @@ namespace Warehouse.Api.Manufacturers.Controllers.v1
             _manufacturerService = manufacturerService;
         }
         
+        /// <summary>
+        /// Gets all manufacturers
+        /// </summary>
+        /// <returns>List of manufacturers</returns>
         [HttpGet]
         public async Task<IActionResult> GetAllAsync()
         {
@@ -24,6 +28,11 @@ namespace Warehouse.Api.Manufacturers.Controllers.v1
             return Ok(result.Data);
         }
 
+        /// <summary>
+        /// Gets manufacturer based on provided id
+        /// </summary>
+        /// <param name="manufacturerId"></param>
+        /// <returns>Manufacturer</returns>
         [HttpGet("{manufacturerId}")]
         public async Task<IActionResult> GetAsync([FromRoute] string manufacturerId)
         {
@@ -31,6 +40,11 @@ namespace Warehouse.Api.Manufacturers.Controllers.v1
             return Ok(result.Data);
         }
 
+        /// <summary>
+        /// Creates manufacturer
+        /// </summary>
+        /// <param name="manufacturers"></param>
+        /// <returns>Created manufacturer</returns>
         [Authorize(Roles = "Admin")]
         [HttpPost]
         public async Task<IActionResult> CreateAsync([FromBody] ManufacturerModelDto manufacturers)
@@ -39,6 +53,12 @@ namespace Warehouse.Api.Manufacturers.Controllers.v1
             return Ok(result.Data);
         }
 
+        /// <summary>
+        /// Updates manufacturer
+        /// </summary>
+        /// <param name="manufacturerId"></param>
+        /// <param name="manufacturers"></param>
+        /// <returns>Updated manufacturer</returns>
         [Authorize(Roles = "Admin")]
         [HttpPut("{manufacturerId}")]
         public async Task<IActionResult> UpdateAsync([FromRoute] string manufacturerId,
@@ -48,6 +68,10 @@ namespace Warehouse.Api.Manufacturers.Controllers.v1
             return Ok(result.Data);
         }
 
+        /// <summary>
+        /// Deletes manufacturer
+        /// </summary>
+        /// <param name="manufacturerId"></param>
         [Authorize(Roles = "Admin")]
         [HttpDelete("{manufacturerId}")]
         public async Task<IActionResult> DeleteAsync([FromRoute] string manufacturerId)

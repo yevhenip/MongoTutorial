@@ -90,24 +90,6 @@ namespace Warehouse.Api.Users.Tests.Business
         }
 
         [Test]
-        public async Task GetByUserNameAsync_WhenCalled_ReturnsUser()
-        {
-            ConfigureGetByUserName(_dbUser);
-
-            var result = await _userService.GetByUserNameAsync(_dbUser.UserName);
-
-            Assert.That(result.Data, Is.EqualTo(_user));
-        }
-
-        [Test]
-        public void GetByUserNameAsync_WhenCalledWithUndefinedUser_ThrowsResultOfUserException()
-        {
-            ConfigureGetByUserName(null);
-
-            Assert.ThrowsAsync<Result<User>>(async () => await _userService.GetByUserNameAsync(_dbUser.UserName));
-        }
-
-        [Test]
         public async Task CreateAsync_WhenCalledWithUniqueData_ReturnsUser()
         {
             var user = ConfigureCreate("b", "b");
@@ -189,16 +171,6 @@ namespace Warehouse.Api.Users.Tests.Business
             Assert.ThrowsAsync<Result<User>>(async () => await _userService.DeleteAsync(_dbUser.Id));
         }
 
-        [Test]
-        public async Task GetRangeByRoleAsync_WhenCalled_ReturnsUsers()
-        {
-            var users = ConfigureGetAll();
-
-            var result = await _userService.GetRangeByRoleAsync(It.IsAny<string>());
-
-            Assert.That(result.Data, Is.EqualTo(users));
-        }
-
         private List<UserDto> ConfigureGetAll()
         {
             List<UserDto> users = new() {_user};
@@ -213,12 +185,6 @@ namespace Warehouse.Api.Users.Tests.Business
             _userRepository.Setup(ur => ur.GetAsync(_dbUser.Id)).ReturnsAsync(dbUser);
             _fileService.Setup(ur => ur.ReadFromFileAsync<User>(It.IsAny<string>(), It.IsAny<string>()))
                 .ReturnsAsync(fileUser);
-            _mapper.Setup(m => m.Map<UserDto>(_dbUser)).Returns(_user);
-        }
-
-        private void ConfigureGetByUserName(User user)
-        {
-            _userRepository.Setup(ur => ur.GetByUserNameAsync(_dbUser.UserName)).ReturnsAsync(user);
             _mapper.Setup(m => m.Map<UserDto>(_dbUser)).Returns(_user);
         }
 
