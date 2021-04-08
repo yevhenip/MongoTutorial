@@ -12,6 +12,8 @@ namespace Warehouse.Core.Interfaces.Repositories
 
         Task<User> GetByUserNameAsync(string userName);
         
+        Task<User> GetByEmailAsync(string email);
+        
         Task<List<User>> GetRangeByRoleAsync(string roleName);
 
         Task CreateAsync(User user);

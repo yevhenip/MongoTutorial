@@ -13,7 +13,7 @@ namespace Warehouse.Api.Manufacturers.Data
 
         public ManufacturerRepository(IMongoClient client)
         {
-            var db = client.GetDatabase("Manufacturers");
+            var db = client.GetDatabase("Warehouse_manufacturers");
             _manufacturerCollection = db.GetCollection<Manufacturer>("manufacturers");
         }
 

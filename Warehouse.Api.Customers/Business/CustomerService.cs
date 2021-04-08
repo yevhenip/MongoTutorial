@@ -83,6 +83,7 @@ namespace Warehouse.Api.Customers.Business
             await _sender.SendMessage(id, Queues.DeleteCustomerQueue);
             await DistributedCache.RemoveAsync(cacheKey);
             await FileService.DeleteFileAsync(_path, cacheKey);
+            await _customerRepository.DeleteAsync(id);
 
             return Result<object>.Success();
         }
@@ -90,8 +91,7 @@ namespace Warehouse.Api.Customers.Business
         public async Task<Result<CustomerDto>> CreateAsync(CustomerDto customer)
         {
             
-            var customerDto = Mapper.Map<CustomerDto>(customer);
-            var customerToDb = Mapper.Map<Customer>(customerDto);
+            var customerToDb = Mapper.Map<Customer>(customer);
 
             var cacheKey = $"Customer-{customerToDb.Id}";
             await DistributedCache.SetCacheAsync(cacheKey, customerToDb, _customerSettings);
@@ -99,7 +99,7 @@ namespace Warehouse.Api.Customers.Business
 
             await _customerRepository.CreateAsync(customerToDb);
             await _sender.SendMessage(customerToDb, Queues.CreateCustomerQueue);
-            return Result<CustomerDto>.Success(customerDto);
+            return Result<CustomerDto>.Success(customer with{Id = customerToDb.Id});
         }
     }
 }

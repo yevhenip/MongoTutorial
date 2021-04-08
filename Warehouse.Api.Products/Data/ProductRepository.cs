@@ -13,7 +13,7 @@ namespace Warehouse.Api.Products.Data
 
         public ProductRepository(IMongoClient client)
         {
-            var db = client.GetDatabase("Products");
+            var db = client.GetDatabase("Warehouse_products");
             _productCollection = db.GetCollection<Product>("products");
         }
 
@@ -48,9 +48,9 @@ namespace Warehouse.Api.Products.Data
                 p.Manufacturers.Any(m => m.Id == manufacturerId)).ToListAsync();
         }
 
-        public Task<Product> GetByCustomerId(string customerId)
+        public Task<List<Product>> GetByCustomerId(string customerId)
         {
-            return _productCollection.FindSync(p => p.Customer.Id == customerId).SingleOrDefaultAsync();
+            return _productCollection.Find(p => p.Customer.Id == customerId).ToListAsync();
         }
     }
 }

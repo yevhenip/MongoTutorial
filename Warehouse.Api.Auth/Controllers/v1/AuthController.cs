@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Warehouse.Api.Controllers.v1;
 using Warehouse.Core.DTO.Auth;
@@ -41,6 +42,7 @@ namespace Warehouse.Api.Auth.Controllers.v1
             return Ok(result.Data);
         }
 
+        [Authorize]
         [HttpPost("[action]")]
         public async Task Logout()
         {

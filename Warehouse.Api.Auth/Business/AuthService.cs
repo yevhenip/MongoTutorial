@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
+using System.Net;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
@@ -46,6 +47,7 @@ namespace Warehouse.Api.Auth.Business
         public async Task<Result<UserDto>> RegisterAsync(RegisterDto register)
         {
             var user = Mapper.Map<UserDto>(register);
+            await IsValid(user);
             var hashedPassword = _hasher.HashPassword(user, register.Password);
             user = user with {PasswordHash = hashedPassword, Roles = new List<string> {"User"}};
             await _sender.SendMessage(user, Queues.CreateUserQueue);
@@ -57,7 +59,7 @@ namespace Warehouse.Api.Auth.Business
             var user = await _userRepository.GetByUserNameAsync(login.UserName);
             if (user == null)
             {
-                throw Result<User>.Failure("userName", "Invalid userName");
+                throw Result<User>.Failure("userName", "Invalid userName", HttpStatusCode.BadRequest);
             }
 
             user.SessionId = sessionId;
@@ -122,6 +124,7 @@ namespace Warehouse.Api.Auth.Business
             {
                 throw Result<User>.Failure("id", "Invalid id");
             }
+
             await _sender.SendMessage(user, Queues.UpdateUserQueue);
             return Result<object>.Success();
         }
@@ -131,7 +134,25 @@ namespace Warehouse.Api.Auth.Business
             var result = _hasher.VerifyHashedPassword(user, user.PasswordHash, password);
             if (result is PasswordVerificationResult.Failed)
             {
-                throw Result<UserAuthenticatedDto>.Failure("password", "Invalid password");
+                throw Result<UserAuthenticatedDto>.Failure("password", "Invalid password", HttpStatusCode.BadRequest);
+            }
+        }
+
+        private async Task IsValid(UserDto user)
+        {
+            var userFromDb = await _userRepository.GetByUserNameAsync(user.UserName);
+            if (userFromDb is not null)
+            {
+                throw Result<UserAuthenticatedDto>.Failure("userName", "User with such userName already exists",
+                    HttpStatusCode.BadRequest);
+            }
+
+            userFromDb = await _userRepository.GetByEmailAsync(user.Email);
+
+            if (userFromDb is not null)
+            {
+                throw Result<UserAuthenticatedDto>.Failure("email", "User with such email already exists",
+                    HttpStatusCode.BadRequest);
             }
         }
 
@@ -139,7 +160,7 @@ namespace Warehouse.Api.Auth.Business
         {
             if (token.DateExpires <= DateTime.UtcNow)
             {
-                throw Result<RefreshToken>.Failure("token", "Token is expired");
+                throw Result<RefreshToken>.Failure("token", "Token is expired", HttpStatusCode.BadRequest);
             }
         }
 

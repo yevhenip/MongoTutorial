@@ -1,4 +1,5 @@
 using System.IO;
+using System.Text.Json;
 using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -22,7 +23,8 @@ namespace Warehouse.Api
 {
     public abstract class StartupBase
     {
-        protected virtual IConfiguration Configuration { get; }
+        private IConfiguration Configuration { get; }
+        private const string DefaultCors = "default";
 
         private IWebHostEnvironment Environment { get; }
 
@@ -46,7 +48,9 @@ namespace Warehouse.Api
                 {
                     o.RegisterValidatorsFromAssembly(typeof(StartupBase).Assembly);
                     o.RunDefaultMvcValidationAfterFluentValidationExecutes = false;
-                });
+                })
+                .AddJsonOptions(opt =>
+                    opt.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase);
 
             services.AddAutoMapper(typeof(ProductProfile).Assembly);
 
@@ -76,6 +80,13 @@ namespace Warehouse.Api
             services.Configure<CacheCustomerSettings>(Configuration.GetSection("Cache:CacheOptions:Customer"));
 
             services.AddJwtBearerAuthentication(Configuration);
+            
+            services.AddCors(cors => cors.AddPolicy(DefaultCors,b =>
+            {
+                b.AllowAnyOrigin();
+                b.AllowAnyHeader();
+                b.AllowAnyMethod();
+            }));
         }
 
         public virtual void Configure(IApplicationBuilder app, IWebHostEnvironment env)
@@ -90,6 +101,7 @@ namespace Warehouse.Api
             app.UseRouting();
             app.UseAuthentication();
             app.UseAuthorization();
+            app.UseCors(DefaultCors);
             app.UseEndpoints(endpoints => { endpoints.MapControllers(); });
         }
     }

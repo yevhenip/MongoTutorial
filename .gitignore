@@ -440,7 +440,8 @@ $RECYCLE.BIN/
 !.vscode/launch.json
 !.vscode/extensions.json
 
-/MongoTutorial.Api/wwwroot/Manufacturers/
-/MongoTutorial.Api/wwwroot/Products/
-/MongoTutorial.Api/wwwroot/Users/
+/Warehouse.Api/wwwroot/Manufacturers/
+/Warehouse.Api/wwwroot/Products/
+/Warehouse.Api/wwwroot/Users/
+Warehouse.Client/warehouse-client/node_modules
 /.run/

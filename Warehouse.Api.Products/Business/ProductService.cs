@@ -27,9 +27,9 @@ namespace Warehouse.Api.Products.Business
         private readonly IProductRepository _productRepository;
         private readonly CacheProductSettings _productSettings;
 
-        public ProductService(IProductRepository productRepository, IDistributedCache distributedCache, 
-            IOptions<CacheProductSettings> productSettings, IOptions<CacheManufacturerSettings> manufacturerSettings, 
-            ICustomerRepository customerRepository, IMapper mapper, IManufacturerRepository manufacturerRepository, 
+        public ProductService(IProductRepository productRepository, IDistributedCache distributedCache,
+            IOptions<CacheProductSettings> productSettings, IOptions<CacheManufacturerSettings> manufacturerSettings,
+            ICustomerRepository customerRepository, IMapper mapper, IManufacturerRepository manufacturerRepository,
             IFileService fileService) : base(distributedCache, mapper, fileService)
         {
             _manufacturerSettings = manufacturerSettings.Value;
@@ -154,9 +154,14 @@ namespace Warehouse.Api.Products.Business
 
         public async Task DeleteCustomerFromProductAsync(string customerId)
         {
-            var product = await _productRepository.GetByCustomerId(customerId);
-            product.Customer = null;
-            await _productRepository.UpdateAsync(product);
+            var products = await _productRepository.GetByCustomerId(customerId);
+            foreach (var product in products)
+            {
+                product.Customer = null;
+                await _productRepository.UpdateAsync(product);
+            }
+
+            await _customerRepository.DeleteAsync(customerId);
         }
 
         public async Task CreateManufacturerAsync(Manufacturer manufacturer)

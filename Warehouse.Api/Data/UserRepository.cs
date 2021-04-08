@@ -32,6 +32,11 @@ namespace Warehouse.Api.Data
             return _userCollection.Find(p => p.UserName == userName).SingleOrDefaultAsync();
         }
 
+        public Task<User> GetByEmailAsync(string email)
+        {
+            return _userCollection.Find(p => p.Email == email).SingleOrDefaultAsync();
+        }
+
         public Task<List<User>> GetRangeByRoleAsync(string roleName)
         {
             return _userCollection.Find(u => u.Roles.Any(r => r == roleName)).ToListAsync();
