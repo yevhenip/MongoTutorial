@@ -18,9 +18,10 @@ export class UserPanelComponent extends AdminPanelComponent implements OnInit {
     super(userService);
   }
 
-  ngOnInit() {
+  ngOnInit() : Promise<any> {
     super.ngOnInit();
     this.displayedColumns = ['fullName', 'userName', 'email', 'phone', 'registrationDateTime', 'editDelete'];
+    return Promise.resolve();
   }
 
   openDialogForEditing(user: User) {

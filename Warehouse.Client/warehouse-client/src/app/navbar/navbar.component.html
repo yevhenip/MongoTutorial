@@ -11,7 +11,7 @@
         </div>
         <div ngbDropdownMenu class="dropdown-menu" aria-labelledby="dropdown01">
           <a class="dropdown-item" routerLink="/my/users/">My Settings</a>
-          <a *ngIf="!authService.isAdmin()" class="dropdown-item" routerLink="/admin">Manage Admin</a>
+          <a *ngIf="authService.isAdmin()" class="dropdown-item" routerLink="/admin">Manage Admin</a>
         </div>
       </div>
       <div class="nav-item mt-1">

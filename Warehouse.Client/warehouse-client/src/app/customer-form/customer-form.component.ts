@@ -1,8 +1,9 @@
 import {Component} from '@angular/core';
 import {FormControl, FormGroup, Validators} from "@angular/forms";
-import {MyErrorStateMatcher} from "../errors/myErrorStateMatcher";
+import {ErrorStateMatcher} from "../errors/myErrorStateMatcher";
 import {Customer} from "../models/customer" ;
 import {MAT_DIALOG_DATA, MatDialogRef} from "@angular/material/dialog";
+import { PHONE_PATTERN } from '../utils/util';
 
 @Component({
   selector: 'app-customer-form',
@@ -16,10 +17,10 @@ export class CustomerFormComponent {
     firstName: new FormControl('', [Validators.required, Validators.minLength(5)]),
     lastName: new FormControl('', Validators.minLength(5)),
     email: new FormControl('', [Validators.required, Validators.email]),
-    phone: new FormControl('', [Validators.required, Validators.pattern('^\\(?([0-9]{3})\\)?[-. ]?([0-9]{3})[-. ]?([0-9]{4})$')])
+    phone: new FormControl('', [Validators.required, Validators.pattern(PHONE_PATTERN)])
   });
 
-  matcher = new MyErrorStateMatcher();
+  matcher = new ErrorStateMatcher();
 
   customer!: Customer;
 

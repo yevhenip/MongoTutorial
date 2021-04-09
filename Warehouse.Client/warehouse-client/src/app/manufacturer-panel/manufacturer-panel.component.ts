@@ -18,9 +18,10 @@ export class ManufacturerPanelComponent extends AdminPanelComponent implements O
     super(manufacturerService);
   }
 
-  ngOnInit() {
+  ngOnInit() : Promise<any> {
     super.ngOnInit();
     this.displayedColumns = ['name', 'address', 'editDelete'];
+    return Promise.resolve();
   }
 
   openDialogForCreation() {

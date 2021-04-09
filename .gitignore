@@ -443,5 +443,6 @@ $RECYCLE.BIN/
 /Warehouse.Api/wwwroot/Manufacturers/
 /Warehouse.Api/wwwroot/Products/
 /Warehouse.Api/wwwroot/Users/
+/Warehouse.Api/wwwroot/Customers/
 Warehouse.Client/warehouse-client/node_modules
 /.run/

@@ -1,7 +1,7 @@
 import {Component, Inject, OnInit} from '@angular/core';
 import {MatDialogRef, MAT_DIALOG_DATA} from '@angular/material/dialog';
 import {Product} from '../models/product';
-import {MyErrorStateMatcher} from "../errors/myErrorStateMatcher";
+import {ErrorStateMatcher} from "../errors/myErrorStateMatcher";
 import {FormControl, FormGroup, Validators} from "@angular/forms";
 import {Manufacturer} from '../models/manufacturer';
 import {Customer} from '../models/customer';
@@ -21,7 +21,7 @@ export class ProductFormComponent implements OnInit {
     const date = (d || new Date());
     return new Date().getTime() > date.getTime();
   }
-  matcher = new MyErrorStateMatcher();
+  matcher = new ErrorStateMatcher();
 
   formControl = new FormGroup({
     name: new FormControl('', [Validators.required, Validators.minLength(5)]),
@@ -52,9 +52,9 @@ export class ProductFormComponent implements OnInit {
     }
   }
 
-  ngOnInit(): void {
-    this.manufacturerService.getAll().subscribe(response => this.manufacturers = response as Manufacturer[]);
-    this.customerService.getAll().subscribe(response => this.customers = response as Customer[]);
+  async ngOnInit(): Promise<any> {
+    this.manufacturers = await this.manufacturerService.getAll() as Manufacturer[];
+    this.customers =  await this.customerService.getAll() as Customer[];
     this.formControl.get('manufacturerIds')?.markAsTouched();
     this.formControl.get('customerId')?.markAsTouched();
   }

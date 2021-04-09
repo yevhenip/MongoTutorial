@@ -1,9 +1,9 @@
 import {Component, EventEmitter, OnInit, Output} from '@angular/core';
 import {FormControl, FormGroup, Validators} from '@angular/forms';
 import {ActivatedRoute, Router} from '@angular/router';
-import {MyErrorStateMatcher} from '../errors/myErrorStateMatcher';
+import {ErrorStateMatcher} from '../errors/myErrorStateMatcher';
 import {User} from '../models/user';
-import { AuthService } from '../services/auth/auth.service';
+import {AuthService} from '../services/auth/auth.service';
 
 @Component({
   selector: 'login',
@@ -11,10 +11,10 @@ import { AuthService } from '../services/auth/auth.service';
   styleUrls: ['./login.component.css']
 })
 export class LoginComponent implements OnInit {
-  matcher = new MyErrorStateMatcher();
+  matcher = new ErrorStateMatcher();
   private returnUrl!: string;
 
-  @Output() loginedUser = new EventEmitter<User>();
+  @Output() onUserLoggedIn = new EventEmitter<User>();
 
   formControl = new FormGroup({
     userName: new FormControl('', [Validators.required, Validators.minLength(5)],),
@@ -27,7 +27,7 @@ export class LoginComponent implements OnInit {
   async login() {
     let login = this.formControl.value;
     let loginResponse: any;
-    let response: any = await this.authService.login(login).toPromise();
+    let response: any = await this.authService.login(login);
     this.formControl.get('password')?.reset();
 
     if (response.error) {
@@ -36,10 +36,8 @@ export class LoginComponent implements OnInit {
       return;
     }
 
-    localStorage.setItem('jwtToken', response.jwtToken);
-    localStorage.setItem('refreshToken', response.refreshToken);
-    localStorage.setItem('user', JSON.stringify(response.user));
-    this.loginedUser.emit(response.user);
+    this.authService.initializeLocalStorage(response);
+    this.onUserLoggedIn.emit(response.user);
     this.router.navigateByUrl(this.returnUrl);
   }
 

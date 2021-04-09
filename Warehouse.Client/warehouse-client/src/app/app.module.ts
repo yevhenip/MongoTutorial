@@ -19,9 +19,8 @@ import {MdComponentsModule} from "./md-components.module";
 import {NavbarComponent} from "./navbar/navbar.component";
 import {ProductFormComponent} from "./product-form/product-form.component";
 import {RegisterComponent} from "./register/register.component";
-import {tokenGetter} from "./services/auth/auth-guard.service";
 import {AuthService} from "./services/auth/auth.service";
-import { DataService } from "./services/data/data.service";
+import {DataService} from "./services/data/data.service";
 import {UserFormComponent} from "./user-form/user-form.component";
 import {UserPanelComponent} from "./user-panel/user-panel.component";
 
@@ -49,7 +48,7 @@ import {UserPanelComponent} from "./user-panel/user-panel.component";
     NgbModule,
     JwtModule.forRoot({
       config: {
-        tokenGetter: tokenGetter
+        tokenGetter: () => localStorage.getItem("jwtToken")
       }
     }),
     MdComponentsModule,

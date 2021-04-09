@@ -13,25 +13,24 @@ export class DataService {
   options = {
     headers: new HttpHeaders()
       .set('Authorization', `Bearer ${localStorage.getItem('jwtToken')}`)
-      .set('Content-Type', 'application/json')
-      .set('Access-Control-Allow-Origin', '')
   };
 
   getAll() {
-    return this.http.get(this.url, this.options);
+    this.options.headers = new HttpHeaders()
+      .set('Authorization', `Bearer ${localStorage.getItem('jwtToken')}`);
+
+    return this.http.get(this.url, this.options).toPromise();
   }
 
   delete(id: string) {
-    return this.http.delete(this.url + id, this.options).subscribe();
+    return this.http.delete(this.url + id, this.options).toPromise();
   }
 
   create(item: any) {
-    let body = JSON.stringify(item);
-    return this.http.post(this.url, body, this.options);
+    return this.http.post(this.url, item, this.options);
   }
 
   edit(item: any) {
-    let body = JSON.stringify(item);
-    return this.http.put(this.url + item.id, body, this.options);
+    return this.http.put(this.url + item.id, item, this.options);
   }
 }

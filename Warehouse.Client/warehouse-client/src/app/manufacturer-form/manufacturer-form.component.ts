@@ -2,7 +2,7 @@ import {Component, Inject} from '@angular/core';
 import {FormControl, FormGroup, Validators} from "@angular/forms";
 import {MAT_DIALOG_DATA, MatDialogRef} from "@angular/material/dialog";
 import {Manufacturer} from '../models/manufacturer';
-import {MyErrorStateMatcher} from "../errors/myErrorStateMatcher";
+import {ErrorStateMatcher} from "../errors/myErrorStateMatcher";
 
 @Component({
   selector: 'app-manufacturer-form',
@@ -15,7 +15,7 @@ export class ManufacturerFormComponent {
     address: new FormControl('', Validators.required),
   });
 
-  matcher = new MyErrorStateMatcher();
+  matcher = new ErrorStateMatcher();
 
   manufacturer!: Manufacturer;
 

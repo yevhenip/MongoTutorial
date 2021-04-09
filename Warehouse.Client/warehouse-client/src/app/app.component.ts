@@ -1,6 +1,6 @@
 import {Component} from '@angular/core';
 import {User} from './models/user';
-import {JwtHelperService} from "@auth0/angular-jwt";
+import {ProfileService} from './services/auth/profile.service';
 
 @Component({
   selector: 'app-root',
@@ -8,13 +8,13 @@ import {JwtHelperService} from "@auth0/angular-jwt";
   styleUrls: ['./app.component.css']
 })
 export class AppComponent {
-  userName: string = this.jwtService.decodeToken()?.UserName;
+  userName: string = this.profileService.decodeToken().UserName;
 
-  constructor(private jwtService: JwtHelperService) {
+  constructor(private profileService: ProfileService) {
   }
 
   onActivate(componentReference: any) {
-    componentReference.loginedUser?.subscribe((user: User) => {
+    componentReference.onUserLoggedIn?.subscribe((user: User) => {
       this.userName = user.userName;
     })
   }

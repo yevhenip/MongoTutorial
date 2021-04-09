@@ -23,13 +23,12 @@ export class AdminPanelComponent {
 
   @ViewChild(MatPaginator) paginator!: MatPaginator;
 
-  ngOnInit() {
-    this.service.getAll().subscribe(response => {
-      let data = response as [];
-      this.resultsLength = data.length;
-      this.dataSource = new MatTableDataSource<Object>(data);
-      this.dataSource.paginator = this.paginator;
-    });
+  async ngOnInit() {
+    let response = await this.service.getAll();
+    let data = response as [];
+    this.resultsLength = data.length;
+    this.dataSource = new MatTableDataSource<Object>(data);
+    this.dataSource.paginator = this.paginator;
   }
 
   applyFilter(event: Event) {

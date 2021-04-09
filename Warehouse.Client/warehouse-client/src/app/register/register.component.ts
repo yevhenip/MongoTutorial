@@ -1,9 +1,10 @@
 import {Component} from '@angular/core';
 import {FormControl, FormGroup, Validators} from "@angular/forms";
 import {Router} from '@angular/router';
-import {MyErrorStateMatcher} from "../errors/myErrorStateMatcher";
+import {ErrorStateMatcher} from "../errors/myErrorStateMatcher";
 import {RegisterModel} from '../models/auth/registerModel';
 import {AuthService} from '../services/auth/auth.service';
+import {PHONE_PATTERN} from '../utils/util';
 
 @Component({
   selector: 'app-register',
@@ -12,7 +13,7 @@ import {AuthService} from '../services/auth/auth.service';
 })
 export class RegisterComponent {
 
-  matcher = new MyErrorStateMatcher();
+  matcher = new ErrorStateMatcher();
   formControl = new FormGroup({
     firstName: new FormControl('', [Validators.required, Validators.minLength(5)],),
     lastName: new FormControl('', [Validators.minLength(5)],),
@@ -20,7 +21,7 @@ export class RegisterComponent {
     password: new FormControl('', [Validators.required, Validators.minLength(5)]),
     confirmedPassword: new FormControl(''),
     email: new FormControl('', [Validators.required, Validators.email]),
-    phone: new FormControl('', [Validators.required, Validators.pattern('^\\(?([0-9]{3})\\)?[-. ]?([0-9]{3})[-. ]?([0-9]{4})$')])
+    phone: new FormControl('', [Validators.required, Validators.pattern(PHONE_PATTERN)])
   });
 
   constructor(private router: Router, private authService: AuthService) {
@@ -36,7 +37,7 @@ export class RegisterComponent {
       return;
     }
 
-    let response = await this.authService.register(register).toPromise();
+    let response = await this.authService.register(register);
     if (response.error) {
       let controlName = Object.keys(response.error.Errors)[0];
       this.formControl.get(controlName)?.setErrors({serverError: true});

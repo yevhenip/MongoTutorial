@@ -25,12 +25,13 @@ export class HomeComponent extends AdminPanelComponent implements OnInit {
   }
 
 
-  ngOnInit() {
+  ngOnInit() : Promise<any> {
     super.ngOnInit();
     this.displayedColumns = ['name', 'dateOfReceipt', 'manufacturersName', 'customerName'];
-    if (!this.authService.isAdmin()) {
+    if (this.authService.isAdmin()) {
       this.displayedColumns.push('editDelete');
     }
+    return Promise.resolve();
   }
 
   openDialogForCreation() {

@@ -125,7 +125,7 @@ namespace Warehouse.Api.Users.Business
 
         public async Task UpdateAsync(User user)
         {
-            var cacheKey = $"Product-{user.Id}";
+            var cacheKey = $"User-{user.Id}";
 
             await _userRepository.UpdateAsync(user);
             await DistributedCache.UpdateAsync(cacheKey, user);

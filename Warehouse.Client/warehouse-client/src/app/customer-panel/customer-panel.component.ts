@@ -18,9 +18,10 @@ export class CustomerPanelComponent extends AdminPanelComponent implements OnIni
     super(customerService);
   }
 
-  ngOnInit() {
+  ngOnInit() : Promise<any> {
     super.ngOnInit()
     this.displayedColumns = ['fullName', 'email', 'phone', 'editDelete'];
+    return Promise.resolve();
   }
 
   openDialogForCreation() {
