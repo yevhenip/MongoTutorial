@@ -28,16 +28,32 @@ namespace Warehouse.Api.Products.Controllers.v1
             return Ok(result.Data);
         }
 
+
+        [HttpGet("{page:int}/{pageSize:int}")]
+        public async Task<IActionResult> GetPageAsync([FromRoute] int page, [FromRoute] int pageSize)
+        {
+            var result = await _productService.GetPageAsync(page, pageSize);
+            return Ok(result.Data);
+        }
+
         /// <summary>
         /// Gets product based on provided id
         /// </summary>
         /// <param name="productId"></param>
         /// <returns>Product</returns>
-        [HttpGet("{productId}")]
+        [HttpGet("{productId:guid}")]
         public async Task<IActionResult> GetAsync([FromRoute] string productId)
         {
             var result = await _productService.GetAsync(productId);
             return Ok(result.Data);
+        }
+
+        [Authorize(Roles = "Admin")]
+        [HttpGet("export")]
+        public async Task<IActionResult> GetExportFileAsync()
+        {
+            var result = await _productService.GetExportFileAsync();
+            return File(result.Data, "text/csv", "products.csv");
         }
 
         /// <summary>
@@ -49,7 +65,7 @@ namespace Warehouse.Api.Products.Controllers.v1
         [HttpPost]
         public async Task<IActionResult> CreateAsync([FromBody] ProductModelDto product)
         {
-            var result = await _productService.CreateAsync(product);
+            var result = await _productService.CreateAsync(product, UserName);
             return Ok(result.Data);
         }
 
@@ -60,11 +76,11 @@ namespace Warehouse.Api.Products.Controllers.v1
         /// <param name="product"></param>
         /// <returns>Updated product</returns>
         [Authorize(Roles = "Admin")]
-        [HttpPut("{productId}")]
+        [HttpPut("{productId:guid}")]
         public async Task<IActionResult> UpdateAsync([FromRoute] string productId,
             [FromBody] ProductModelDto product)
         {
-            var result = await _productService.UpdateAsync(productId, product);
+            var result = await _productService.UpdateAsync(productId, product, UserName);
             return Ok(result.Data);
         }
 
@@ -73,7 +89,7 @@ namespace Warehouse.Api.Products.Controllers.v1
         /// </summary>
         /// <param name="productId"></param>
         [Authorize(Roles = "Admin")]
-        [HttpDelete("{productId}")]
+        [HttpDelete("{productId:guid}")]
         public async Task<IActionResult> DeleteAsync([FromRoute] string productId)
         {
             var result = await _productService.DeleteAsync(productId);

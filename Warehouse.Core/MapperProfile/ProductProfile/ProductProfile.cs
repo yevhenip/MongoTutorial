@@ -40,6 +40,16 @@ namespace Warehouse.Core.MapperProfile.ProductProfile
                     => opt.MapFrom(p => p.Name))
                 .ForMember(p => p.DateOfReceipt, opt
                     => opt.MapFrom(p => p.DateOfReceipt));
+            
+            CreateMap<Product, ExportProduct>()
+                .ForMember(p => p.Id, opt
+                    => opt.MapFrom(p => p.Id))
+                .ForMember(p => p.Name, opt
+                    => opt.MapFrom(p => p.Name))
+                .ForMember(p => p.DateOfReceipt, opt
+                    => opt.MapFrom(p => p.DateOfReceipt))
+                .ForMember(p => p.CustomerName, opt
+                    => opt.MapFrom(p => p.Customer.FullName));
         }
     }
 }

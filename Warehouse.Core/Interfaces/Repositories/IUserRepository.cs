@@ -11,7 +11,12 @@ namespace Warehouse.Core.Interfaces.Repositories
         /// </summary>
         /// <returns>List of users</returns>
         Task<List<User>> GetAllAsync();
-        
+
+
+        public Task<List<User>> GetPageAsync(int page, int pageSize);
+
+        public Task<long> GetCountAsync();
+
         /// <summary>
         /// Gets user in database based on provided id
         /// </summary>
@@ -25,7 +30,10 @@ namespace Warehouse.Core.Interfaces.Repositories
         /// <param name="userName"></param>
         /// <returns>User</returns>
         Task<User> GetByUserNameAsync(string userName);
-        
+
+
+        Task<User> GetByEmailAsync(string email);
+
         /// <summary>
         /// Gets users in database based on provided role
         /// </summary>

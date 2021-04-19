@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text.Json;
 using System.Threading.Tasks;
 using AutoMapper;
 using Microsoft.Extensions.Caching.Distributed;
@@ -8,7 +9,9 @@ using Moq;
 using NUnit.Framework;
 using Warehouse.Api.Users.Business;
 using Warehouse.Core.Common;
+using Warehouse.Core.DTO;
 using Warehouse.Core.DTO.Users;
+using Warehouse.Core.Interfaces.Messaging.Sender;
 using Warehouse.Core.Interfaces.Repositories;
 using Warehouse.Core.Interfaces.Services;
 using Warehouse.Core.Settings.CacheSettings;
@@ -33,6 +36,7 @@ namespace Warehouse.Api.Users.Tests.Business
         private readonly Mock<IFileService> _fileService = new();
         private readonly Mock<IDistributedCache> _cache = new();
         private readonly Mock<IMapper> _mapper = new();
+        private readonly Mock<ISender> _sender = new();
 
         private UserService _userService;
 
@@ -42,7 +46,7 @@ namespace Warehouse.Api.Users.Tests.Business
             _options.Setup(opt => opt.Value).Returns(new CacheUserSettings
                 {AbsoluteExpiration = 1, SlidingExpiration = 1});
             _userService = new(_refreshTokenRepository.Object, _userRepository.Object, _options.Object,
-                _cache.Object, _mapper.Object, _fileService.Object);
+                _cache.Object, _mapper.Object, _fileService.Object, _sender.Object);
         }
 
         [SetUp]
@@ -94,7 +98,7 @@ namespace Warehouse.Api.Users.Tests.Business
         {
             var user = ConfigureCreate("b", "b");
 
-            var result = await _userService.CreateAsync(_user);
+            var result = await _userService.CreateAsync(_dbUser);
 
             Assert.That(result.Data, Is.EqualTo(_user));
             user.UserName = "a";
@@ -106,7 +110,7 @@ namespace Warehouse.Api.Users.Tests.Business
         {
             var user = ConfigureCreate("a", "b");
 
-            Assert.ThrowsAsync<Result<UserDto>>(async () => await _userService.CreateAsync(_user));
+            Assert.ThrowsAsync<Result<UserDto>>(async () => await _userService.CreateAsync(_dbUser));
             user.UserName = "a";
         }
 
@@ -115,7 +119,7 @@ namespace Warehouse.Api.Users.Tests.Business
         {
             var user = ConfigureCreate("b", "a");
 
-            Assert.ThrowsAsync<Result<UserDto>>(async () => await _userService.CreateAsync(_user));
+            Assert.ThrowsAsync<Result<UserDto>>(async () => await _userService.CreateAsync(_dbUser));
             user.Email = "a";
         }
 
@@ -130,7 +134,7 @@ namespace Warehouse.Api.Users.Tests.Business
         {
             var user = ConfigureUpdate(_dbUser, null);
 
-            var result = await _userService.UpdateAsync(_dbUser.Id, user);
+            var result = await _userService.UpdateAsync(_dbUser.Id, user, "a");
 
             Assert.That(result.Data, Is.EqualTo(_user));
         }
@@ -140,7 +144,7 @@ namespace Warehouse.Api.Users.Tests.Business
         {
             var user = ConfigureUpdate(null, _dbUser);
 
-            var result = await _userService.UpdateAsync(_dbUser.Id, user);
+            var result = await _userService.UpdateAsync(_dbUser.Id, user, "a");
 
             Assert.That(result.Data, Is.EqualTo(_user));
         }
@@ -150,7 +154,7 @@ namespace Warehouse.Api.Users.Tests.Business
         {
             var user = ConfigureUpdate(null, null);
 
-            Assert.ThrowsAsync<Result<User>>(async () => await _userService.UpdateAsync(_dbUser.Id, user));
+            Assert.ThrowsAsync<Result<User>>(async () => await _userService.UpdateAsync(_dbUser.Id, user, "a"));
         }
 
         [Test]
@@ -171,11 +175,32 @@ namespace Warehouse.Api.Users.Tests.Business
             Assert.ThrowsAsync<Result<User>>(async () => await _userService.DeleteAsync(_dbUser.Id));
         }
 
+        [Test]
+        public async Task GetRangeByRoleAsync_WhenCalled_ReturnsUsers()
+        {
+            var users = ConfigureGetAll();
+
+            var result = await _userService.GetRangeByRoleAsync(It.IsAny<string>());
+
+            Assert.That(result.Data, Is.EqualTo(users));
+        }
+        
+        [Test]
+        public async Task GetPageAsync_WhenCalled_ReturnsPageDateDtoOfUserDto()
+        {
+            var expected = ConfigureGetPage();
+
+            var result = await _userService.GetPageAsync(1, 1);
+
+            Assert.That(result.Data, Is.EqualTo(expected));
+        }
+
         private List<UserDto> ConfigureGetAll()
         {
             List<UserDto> users = new() {_user};
             List<User> usersFromDb = new() {_dbUser};
             _userRepository.Setup(ur => ur.GetRangeByRoleAsync(It.IsAny<string>())).ReturnsAsync(usersFromDb);
+            _userRepository.Setup(ur => ur.GetAllAsync()).ReturnsAsync(usersFromDb);
             _mapper.Setup(m => m.Map<List<UserDto>>(usersFromDb)).Returns(users);
             return users;
         }
@@ -183,19 +208,20 @@ namespace Warehouse.Api.Users.Tests.Business
         private void ConfigureGet(User dbUser, User fileUser)
         {
             _userRepository.Setup(ur => ur.GetAsync(_dbUser.Id)).ReturnsAsync(dbUser);
-            _fileService.Setup(ur => ur.ReadFromFileAsync<User>(It.IsAny<string>(), It.IsAny<string>()))
+            _fileService.Setup(fs => fs.ReadFromFileAsync<User>(It.IsAny<string>(), It.IsAny<string>()))
                 .ReturnsAsync(fileUser);
             _mapper.Setup(m => m.Map<UserDto>(_dbUser)).Returns(_user);
         }
 
         private User ConfigureCreate(string email, string userName)
         {
-            var user = _dbUser;
+            var user = JsonSerializer.Deserialize<User>(JsonSerializer.Serialize(_dbUser));
             user.Email = email;
             user.UserName = userName;
             List<User> usersFromDb = new() {user};
             _userRepository.Setup(ur => ur.GetAllAsync()).ReturnsAsync(usersFromDb);
             _mapper.Setup(m => m.Map<User>(_user)).Returns(_dbUser);
+            _mapper.Setup(m => m.Map<UserDto>(_dbUser)).Returns(_user);
             return user;
         }
 
@@ -203,7 +229,7 @@ namespace Warehouse.Api.Users.Tests.Business
         {
             UserModelDto user = new("a", "a", "a", "a");
             _userRepository.Setup(ur => ur.GetAsync(_dbUser.Id)).ReturnsAsync(dbUser);
-            _fileService.Setup(ur => ur.ReadFromFileAsync<User>(It.IsAny<string>(), It.IsAny<string>()))
+            _fileService.Setup(fs => fs.ReadFromFileAsync<User>(It.IsAny<string>(), It.IsAny<string>()))
                 .ReturnsAsync(fileUser);
             _mapper.Setup(m => m.Map<UserDto>(user)).Returns(_user);
 
@@ -219,6 +245,19 @@ namespace Warehouse.Api.Users.Tests.Business
                     Id = "a", Token = "a", User = _dbUser, DateCreated = DateTime.Today,
                     DateExpires = new DateTime(2222, 2, 2)
                 });
+        }
+        
+        private PageDataDto<UserDto> ConfigureGetPage()
+        {
+            List<UserDto> userDtos = new();
+            List<User> users = new();
+            PageDataDto<UserDto> expected = new(userDtos, 1);
+            _userRepository.Setup(ur => ur.GetPageAsync(1, 1))
+                .ReturnsAsync(users);
+            _userRepository.Setup(ur => ur.GetCountAsync())
+                .ReturnsAsync(1);
+            _mapper.Setup(m => m.Map<List<UserDto>>(users)).Returns(userDtos);
+            return expected;
         }
     }
 }

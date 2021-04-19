@@ -1,6 +1,4 @@
 ﻿namespace Warehouse.Core.DTO.Manufacturer
 {
-    public record ManufacturerModelDto(string Name, string Address)
-    {
-    }
+    public record ManufacturerModelDto(string Name, string Address);
 }

@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 using Warehouse.Core.Common;
+using Warehouse.Core.DTO;
 using Warehouse.Core.DTO.Customer;
 
 namespace Warehouse.Core.Interfaces.Services
@@ -12,6 +13,8 @@ namespace Warehouse.Core.Interfaces.Services
         /// </summary>
         /// <returns>List of customers</returns>
         Task<Result<List<CustomerDto>>> GetAllAsync();
+
+        Task<Result<PageDataDto<CustomerDto>>> GetPageAsync(int page, int pageSize);
 
         /// <summary>
         /// Tries to get customer firstly from cache, then from database, then from file. If customer still null throws an exception
@@ -25,12 +28,13 @@ namespace Warehouse.Core.Interfaces.Services
         /// </summary>
         /// <param name="id"></param>
         Task<Result<object>> DeleteAsync(string id);
-        
+
         /// <summary>
         /// Creates customer, adds to cache, file system and sends message with customer
         /// </summary>
         /// <param name="customer"></param>
+        /// <param name="userName"></param>
         /// <returns>Created customer</returns>
-        Task<Result<CustomerDto>> CreateAsync(CustomerDto customer);
+        Task<Result<CustomerDto>> CreateAsync(CustomerDto customer, string userName);
     }
 }

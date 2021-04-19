@@ -16,7 +16,7 @@ namespace Warehouse.Api.Manufacturers.Controllers.v1
         {
             _manufacturerService = manufacturerService;
         }
-        
+
         /// <summary>
         /// Gets all manufacturers
         /// </summary>
@@ -33,10 +33,17 @@ namespace Warehouse.Api.Manufacturers.Controllers.v1
         /// </summary>
         /// <param name="manufacturerId"></param>
         /// <returns>Manufacturer</returns>
-        [HttpGet("{manufacturerId}")]
+        [HttpGet("{manufacturerId:guid}")]
         public async Task<IActionResult> GetAsync([FromRoute] string manufacturerId)
         {
             var result = await _manufacturerService.GetAsync(manufacturerId);
+            return Ok(result.Data);
+        }
+
+        [HttpGet("{page:int}/{pageSize:int}")]
+        public async Task<IActionResult> GetPageAsync([FromRoute] int page, [FromRoute] int pageSize)
+        {
+            var result = await _manufacturerService.GetPageAsync(page, pageSize);
             return Ok(result.Data);
         }
 
@@ -49,7 +56,7 @@ namespace Warehouse.Api.Manufacturers.Controllers.v1
         [HttpPost]
         public async Task<IActionResult> CreateAsync([FromBody] ManufacturerModelDto manufacturers)
         {
-            var result = await _manufacturerService.CreateAsync(manufacturers);
+            var result = await _manufacturerService.CreateAsync(manufacturers, UserName);
             return Ok(result.Data);
         }
 
@@ -60,11 +67,11 @@ namespace Warehouse.Api.Manufacturers.Controllers.v1
         /// <param name="manufacturers"></param>
         /// <returns>Updated manufacturer</returns>
         [Authorize(Roles = "Admin")]
-        [HttpPut("{manufacturerId}")]
+        [HttpPut("{manufacturerId:guid}")]
         public async Task<IActionResult> UpdateAsync([FromRoute] string manufacturerId,
             [FromBody] ManufacturerModelDto manufacturers)
         {
-            var result = await _manufacturerService.UpdateAsync(manufacturerId, manufacturers);
+            var result = await _manufacturerService.UpdateAsync(manufacturerId, manufacturers, UserName);
             return Ok(result.Data);
         }
 
@@ -73,7 +80,7 @@ namespace Warehouse.Api.Manufacturers.Controllers.v1
         /// </summary>
         /// <param name="manufacturerId"></param>
         [Authorize(Roles = "Admin")]
-        [HttpDelete("{manufacturerId}")]
+        [HttpDelete("{manufacturerId:guid}")]
         public async Task<IActionResult> DeleteAsync([FromRoute] string manufacturerId)
         {
             var result = await _manufacturerService.DeleteAsync(manufacturerId);

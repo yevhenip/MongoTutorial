@@ -16,7 +16,7 @@ namespace Warehouse.Api.Customers.Controllers.v1
         {
             _customerService = customerService;
         }
-        
+
         /// <summary>
         /// Gets all customers
         /// </summary>
@@ -33,10 +33,17 @@ namespace Warehouse.Api.Customers.Controllers.v1
         /// </summary>
         /// <param name="customerId"></param>
         /// <returns>Customer</returns>
-        [HttpGet("{customerId}")]
+        [HttpGet("{customerId:guid}")]
         public async Task<IActionResult> GetAsync([FromRoute] string customerId)
         {
             var result = await _customerService.GetAsync(customerId);
+            return Ok(result.Data);
+        }
+
+        [HttpGet("{page:int}/{pageSize:int}")]
+        public async Task<IActionResult> GetPageAsync([FromRoute] int page, [FromRoute] int pageSize)
+        {
+            var result = await _customerService.GetPageAsync(page, pageSize);
             return Ok(result.Data);
         }
 
@@ -49,16 +56,16 @@ namespace Warehouse.Api.Customers.Controllers.v1
         [HttpPost]
         public async Task<IActionResult> CreateAsync([FromBody] CustomerDto customer)
         {
-            var result = await _customerService.CreateAsync(customer);
+            var result = await _customerService.CreateAsync(customer, UserName);
             return Ok(result.Data);
         }
-        
+
         /// <summary>
         /// Deletes customer
         /// </summary>
         /// <param name="customerId"></param>
         [Authorize(Roles = "Admin")]
-        [HttpDelete("{customerId}")]
+        [HttpDelete("{customerId:guid}")]
         public async Task<IActionResult> DeleteAsync([FromRoute] string customerId)
         {
             var result = await _customerService.DeleteAsync(customerId);

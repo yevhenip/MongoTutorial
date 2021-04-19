@@ -1,0 +1,26 @@
+<h2 mat-dialog-title>Manufacturer</h2>
+<mat-dialog-content class="mat-typography">
+  <form [formGroup]="formControl" (ngSubmit)="ok()" class="d-flex flex-column justify-content-center">
+    <mat-form-field class="pb-3">
+      <mat-label>Name</mat-label>
+      <label>
+        <input matInput type="text" formControlName="name" [errorStateMatcher]="matcher">
+      </label>
+      <mat-error *ngIf="formControl.get('name')?.hasError('required')">Name required</mat-error>
+      <mat-error *ngIf="formControl.get('name')?.hasError('minlength')">Minimum length is 5</mat-error>
+    </mat-form-field>
+
+    <mat-form-field class="pb-3">
+      <mat-label>Address</mat-label>
+      <label>
+        <input matInput type="text" formControlName="address" [errorStateMatcher]="matcher">
+      </label>
+      <mat-error *ngIf="formControl.get('address')?.hasError('required')">Address required</mat-error>
+    </mat-form-field>
+
+    <div class="d-flex justify-content-end pb-3">
+      <button class="m-1" mat-button mat-dialog-close cdkFocusInitial>Cancel</button>
+      <button class="m-1" type="submit" mat-raised-button [disabled]="formControl.invalid" mat-button (click)="ok()">Ok</button>
+    </div>
+  </form>
+</mat-dialog-content>

@@ -1,0 +1,76 @@
+<div class="container d-flex justify-content-center mt-5 pt-5">
+  <mat-card class="mt-5">
+    <mat-card-title class="d-flex justify-content-center">Register</mat-card-title>
+    <mat-card-content>
+      <form [formGroup]="formControl" (ngSubmit)="register()" class="d-flex flex-column justify-content-center">
+        <mat-form-field class="pb-3">
+          <mat-label>Username</mat-label>
+          <label>
+            <input matInput type="text" formControlName="userName" [errorStateMatcher]="matcher">
+          </label>
+          <mat-error *ngIf="formControl.get('userName')?.hasError('serverError')">Username have already taken</mat-error>
+          <mat-error *ngIf="formControl.get('userName')?.hasError('required')">Username required</mat-error>
+          <mat-error *ngIf="formControl.get('userName')?.hasError('minlength')">Minimum length is 5</mat-error>
+        </mat-form-field>
+
+        <mat-form-field class="pb-3">
+          <mat-label>First name</mat-label>
+          <label>
+            <input matInput type="text" formControlName="firstName" [errorStateMatcher]="matcher">
+          </label>
+          <mat-error *ngIf="formControl.get('firstName')?.hasError('required')">Fullname required</mat-error>
+          <mat-error *ngIf="formControl.get('firstName')?.hasError('minlength')">Minimum length is 5</mat-error>
+        </mat-form-field>
+
+        <mat-form-field class="pb-3">
+          <mat-label>Last name</mat-label>
+          <label>
+            <input matInput type="text" formControlName="lastName" [errorStateMatcher]="matcher">
+          </label>
+          <mat-error *ngIf="formControl.get('lastName')?.hasError('minlength')">Minimum length is 5</mat-error>
+        </mat-form-field>
+
+        <mat-form-field class="pb-3">
+          <mat-label>Email</mat-label>
+          <label>
+            <input matInput type="email" formControlName="email" [errorStateMatcher]="matcher">
+          </label>
+          <mat-error *ngIf="formControl.get('email')?.hasError('serverError')">Email has already taken</mat-error>
+          <mat-error *ngIf="formControl.get('email')?.hasError('required')">Email required</mat-error>
+          <mat-error *ngIf="formControl.get('email')?.hasError('email')">Email is incorrect</mat-error>
+        </mat-form-field>
+
+        <mat-form-field class="pb-3">
+          <mat-label>Password</mat-label>
+          <label>
+            <input matInput type="password" formControlName="password" [errorStateMatcher]="matcher">
+          </label>
+          <mat-error *ngIf="formControl.get('password')?.hasError('serverError')">Password is incorrect</mat-error>
+          <mat-error *ngIf="formControl.get('password')?.hasError('required')">Password required</mat-error>
+          <mat-error *ngIf="formControl.get('password')?.hasError('minlength')">Minimum length is 5</mat-error>
+        </mat-form-field>
+
+        <mat-form-field class="pb-3">
+          <mat-label>Confirm Password</mat-label>
+          <label>
+            <input matInput type="password" formControlName="confirmedPassword" [errorStateMatcher]="matcher">
+          </label>
+          <mat-error *ngIf="formControl.get('confirmedPassword')?.hasError('notConfirmedPassword')">Password doesn't match</mat-error>
+        </mat-form-field>
+
+        <mat-form-field class="pb-3">
+          <mat-label>Phone</mat-label>
+          <label>
+            <input matInput type="text" formControlName="phone" [errorStateMatcher]="matcher">
+          </label>
+          <mat-error *ngIf="formControl.get('phone')?.hasError('required')">Phone required</mat-error>
+          <mat-error *ngIf="formControl.get('phone')?.hasError('pattern')">Phone is incorrect</mat-error>
+        </mat-form-field>
+
+        <div class="d-flex justify-content-end pb-3">
+          <button type="submit" mat-raised-button [disabled]="formControl.invalid">Sign up</button>
+        </div>
+      </form>
+    </mat-card-content>
+  </mat-card>
+</div>

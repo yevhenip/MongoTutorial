@@ -21,7 +21,9 @@ namespace Warehouse.Core.MapperProfile.AuthProfile
                 .ForMember(u => u.UserName, opt =>
                     opt.MapFrom(r => r.UserName))
                 .ForMember(u => u.RegistrationDateTime, opt =>
-                    opt.MapFrom(_ => DateTime.UtcNow));
+                    opt.MapFrom(_ => DateTime.UtcNow))
+                .ForMember(u => u.SessionId, opt =>
+                    opt.MapFrom(_ => Guid.NewGuid().ToString()));
         }
     }
 }

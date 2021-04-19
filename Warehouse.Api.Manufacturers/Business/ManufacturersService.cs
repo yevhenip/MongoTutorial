@@ -1,5 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Text.Json;
 using System.Threading.Tasks;
 using AutoMapper;
 using Microsoft.Extensions.Caching.Distributed;
@@ -7,6 +9,8 @@ using Microsoft.Extensions.Options;
 using Warehouse.Api.Business;
 using Warehouse.Api.Extensions;
 using Warehouse.Core.Common;
+using Warehouse.Core.DTO;
+using Warehouse.Core.DTO.Log;
 using Warehouse.Core.DTO.Manufacturer;
 using Warehouse.Core.Interfaces.Messaging.Sender;
 using Warehouse.Core.Interfaces.Repositories;
@@ -19,15 +23,13 @@ namespace Warehouse.Api.Manufacturers.Business
     public class ManufacturerService : ServiceBase<Manufacturer>, IManufacturerService
     {
         private readonly string _path = Directory.GetCurrentDirectory() + @"\..\Warehouse.Api\wwwroot\Manufacturers\";
-        private readonly ISender _sender;
         private readonly CacheManufacturerSettings _manufacturerSettings;
         private readonly IManufacturerRepository _manufacturerRepository;
 
         public ManufacturerService(IOptions<CacheManufacturerSettings> manufacturerSettings,
             IManufacturerRepository manufacturerRepository, IDistributedCache distributedCache, IMapper mapper,
-            ISender sender, IFileService fileService) : base(distributedCache, mapper, fileService)
+            ISender sender, IFileService fileService) : base(mapper, distributedCache, sender, fileService)
         {
-            _sender = sender;
             _manufacturerSettings = manufacturerSettings.Value;
             _manufacturerRepository = manufacturerRepository;
         }
@@ -35,6 +37,25 @@ namespace Warehouse.Api.Manufacturers.Business
         public async Task<Result<List<ManufacturerDto>>> GetAllAsync()
         {
             var manufacturersInDb = await _manufacturerRepository.GetAllAsync();
+            var manufacturers = Mapper.Map<List<ManufacturerDto>>(manufacturersInDb);
+
+            return Result<List<ManufacturerDto>>.Success(manufacturers);
+        }
+
+        public async Task<Result<PageDataDto<ManufacturerDto>>> GetPageAsync(int page, int pageSize)
+        {
+            var manufacturersInDb = await _manufacturerRepository.GetPageAsync(page, pageSize);
+            var count = await _manufacturerRepository.GetCountAsync();
+            var manufacturers = Mapper.Map<List<ManufacturerDto>>(manufacturersInDb);
+            PageDataDto<ManufacturerDto> pageData = new(manufacturers, count);
+
+            return Result<PageDataDto<ManufacturerDto>>.Success(pageData);
+        }
+
+        public async Task<Result<List<ManufacturerDto>>> GetRangeAsync(IEnumerable<string> manufacturerIds)
+        {
+            var manufacturersInDb =
+                await _manufacturerRepository.GetRangeAsync(manufacturerIds);
             var manufacturers = Mapper.Map<List<ManufacturerDto>>(manufacturersInDb);
 
             return Result<List<ManufacturerDto>>.Success(manufacturers);
@@ -70,21 +91,27 @@ namespace Warehouse.Api.Manufacturers.Business
             return Result<ManufacturerDto>.Success(manufacturer);
         }
 
-        public async Task<Result<ManufacturerDto>> CreateAsync(ManufacturerModelDto manufacturer)
+        public async Task<Result<ManufacturerDto>> CreateAsync(ManufacturerModelDto manufacturer, string userName)
         {
             var manufacturerDto = Mapper.Map<ManufacturerDto>(manufacturer);
             var manufacturerToDb = Mapper.Map<Manufacturer>(manufacturerDto);
 
             var cacheKey = $"Manufacturer-{manufacturerToDb.Id}";
+            LogDto log =
+                new(Guid.NewGuid().ToString(), userName, "added manufacturer", JsonSerializer.Serialize(manufacturerDto,
+                    JsonSerializerOptions), DateTime.UtcNow);
+
             await DistributedCache.SetCacheAsync(cacheKey, manufacturerToDb, _manufacturerSettings);
             await FileService.WriteToFileAsync(manufacturerToDb, _path, cacheKey);
 
             await _manufacturerRepository.CreateAsync(manufacturerToDb);
-            await _sender.SendMessage(manufacturerToDb, Queues.CreateManufacturerQueue);
+            await Sender.SendMessage(manufacturerToDb, Queues.CreateManufacturerQueue);
+            await Sender.SendMessage(log, Queues.CreateLog);
             return Result<ManufacturerDto>.Success(manufacturerDto);
         }
 
-        public async Task<Result<ManufacturerDto>> UpdateAsync(string manufacturerId, ManufacturerModelDto manufacturer)
+        public async Task<Result<ManufacturerDto>> UpdateAsync(string manufacturerId, ManufacturerModelDto manufacturer,
+            string userName)
         {
             var cacheKey = $"Manufacturer-{manufacturerId}";
             Manufacturer manufacturerInDb;
@@ -97,9 +124,14 @@ namespace Warehouse.Api.Manufacturers.Business
 
             var manufacturerDto = Mapper.Map<ManufacturerDto>(manufacturer) with {Id = manufacturerId};
             manufacturerInDb = Mapper.Map<Manufacturer>(manufacturerDto);
+            LogDto log =
+                new(Guid.NewGuid().ToString(), userName, "edited manufacturer", JsonSerializer.Serialize(
+                    manufacturerDto,
+                    JsonSerializerOptions), DateTime.UtcNow);
 
             await _manufacturerRepository.UpdateAsync(manufacturerInDb);
-            await _sender.SendMessage(manufacturerDto, Queues.UpdateManufacturerQueue);
+            await Sender.SendMessage(manufacturerDto, Queues.UpdateManufacturerQueue);
+            await Sender.SendMessage(log, Queues.CreateLog);
             await DistributedCache.UpdateAsync(cacheKey, manufacturerInDb);
             await _manufacturerRepository.UpdateAsync(manufacturerInDb);
             await FileService.WriteToFileAsync(manufacturerInDb, _path, cacheKey);
@@ -116,7 +148,7 @@ namespace Warehouse.Api.Manufacturers.Business
                 CheckForNull(manufacturerInDb);
             }
 
-            await _sender.SendMessage(id, Queues.DeleteManufacturerQueue);
+            await Sender.SendMessage(id, Queues.DeleteManufacturerQueue);
             await _manufacturerRepository.DeleteAsync(id);
             await FileService.DeleteFileAsync(_path, cacheKey);
 

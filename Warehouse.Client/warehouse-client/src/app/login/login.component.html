@@ -1,0 +1,31 @@
+<div class="container d-flex justify-content-center mt-5 pt-5">
+  <mat-card class="mt-5">
+    <mat-card-title class="d-flex justify-content-center">Log in</mat-card-title>
+    <mat-card-content>
+      <form [formGroup]="formControl" (ngSubmit)="login()" class="d-flex flex-column justify-content-center">
+        <mat-form-field class="pb-3">
+          <mat-label>Username</mat-label>
+          <label>
+            <input matInput type="text" formControlName="userName" [errorStateMatcher]="matcher">
+          </label>
+          <mat-error *ngIf="formControl.get('userName')?.hasError('required')">Username required</mat-error>
+          <mat-error *ngIf="formControl.get('userName')?.hasError('minlength')">Minimum length is 5</mat-error>
+        </mat-form-field>
+
+        <mat-form-field class="pb-3">
+          <mat-label>Password</mat-label>
+          <label>
+            <input matInput type="password" formControlName="password" [errorStateMatcher]="matcher">
+          </label>
+          <mat-error *ngIf="formControl.get('password')?.hasError('required')">Password required</mat-error>
+          <mat-error *ngIf="formControl.get('password')?.hasError('minlength')">Minimum length is 5</mat-error>
+        </mat-form-field>
+        <mat-error class="d-flex justify-content-center mb-2" *ngIf="formControl.get('userName')?.hasError('serverError')|| formControl.get('password')?.hasError('serverError')">Username or password is incorrect</mat-error>
+        <div class="d-flex justify-content-end pb-3">
+          <button type="submit" mat-raised-button [disabled]="formControl.invalid">Log in</button>
+        </div>
+        <span class="d-flex justify-content-center">Don't have an account? &#8203;<a routerLink="/register">Sign up</a></span>
+      </form>
+    </mat-card-content>
+  </mat-card>
+</div>

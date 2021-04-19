@@ -1,0 +1,22 @@
+<nav class="navbar navbar-expand-md navbar-light bg-light fixed-top d-flex justify-content-between">
+  <div>
+    <a class="navbar-brand" routerLink="/">Warehouse</a>
+  </div>
+  <div class="mr-5 pr-2">
+    <div class="navbar-nav mr-auto d-sm-flex flex-row" *ngIf="authService.isLoggedIn()">
+      <div  ngbDropdown class="nav-item dropdown">
+        <div ngbDropdownToggle class="nav-link dropdown-toggle d-flex" id="dropdown01" data-toggle="dropdown"
+             aria-haspopup="true" aria-expanded="false">
+          <div id="profileImage"><small>{{userName.slice(0, 1)?.toUpperCase()}}</small></div>
+        </div>
+        <div ngbDropdownMenu class="dropdown-menu" aria-labelledby="dropdown01">
+          <a class="dropdown-item" routerLink="">My Settings</a>
+          <a *ngIf="authService.isAdmin()" class="dropdown-item" routerLink="/admin">Manage Admin</a>
+        </div>
+      </div>
+      <div class="nav-item mt-1">
+        <button class="dropdown-item" (click)="logout()" mat-button>Log Out</button>
+      </div>
+    </div>
+  </div>
+</nav>

@@ -22,6 +22,19 @@ namespace Warehouse.Api.Data
             return _userCollection.Find(_ => true).ToListAsync();
         }
 
+        public Task<List<User>> GetPageAsync(int page, int pageSize)
+        {
+            return _userCollection.Find(_ => true)
+                .Skip((page - 1) * pageSize)
+                .Limit(pageSize)
+                .ToListAsync();
+        }
+        
+        public Task<long> GetCountAsync()
+        {
+            return _userCollection.CountDocumentsAsync(_ => true);
+        }
+        
         public Task<User> GetAsync(string id)
         {
             return _userCollection.Find(p => p.Id == id).SingleOrDefaultAsync();
@@ -30,6 +43,11 @@ namespace Warehouse.Api.Data
         public Task<User> GetByUserNameAsync(string userName)
         {
             return _userCollection.Find(p => p.UserName == userName).SingleOrDefaultAsync();
+        }
+
+        public Task<User> GetByEmailAsync(string email)
+        {
+            return _userCollection.Find(p => p.Email == email).SingleOrDefaultAsync();
         }
 
         public Task<List<User>> GetRangeByRoleAsync(string roleName)

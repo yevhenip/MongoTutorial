@@ -33,10 +33,18 @@ namespace Warehouse.Api.Users.Controllers.v1
         /// </summary>
         /// <param name="userId"></param>
         /// <returns>User</returns>
-        [HttpGet("{userId}")]
+        [HttpGet("{userId:guid}")]
         public async Task<IActionResult> GetAsync([FromRoute] string userId)
         {
             var result = await _userService.GetAsync(userId);
+            return Ok(result.Data);
+        }
+        
+        
+        [HttpGet("{page:int}/{pageSize:int}")]
+        public async Task<IActionResult> GetPageAsync([FromRoute] int page, [FromRoute] int pageSize)
+        {
+            var result = await _userService.GetPageAsync(page, pageSize);
             return Ok(result.Data);
         }
         
@@ -46,10 +54,10 @@ namespace Warehouse.Api.Users.Controllers.v1
         /// <param name="userId"></param>
         /// <param name="user"></param>
         /// <returns>Updated user</returns>
-        [HttpPut("{userId}")]
+        [HttpPut("{userId:guid}")]
         public async Task<IActionResult> UpdateAsync([FromRoute] string userId, UserModelDto user)
         {
-            var result = await _userService.UpdateAsync(userId, user);
+            var result = await _userService.UpdateAsync(userId, user, UserName);
             return Ok(result.Data);
         }
 
@@ -57,7 +65,7 @@ namespace Warehouse.Api.Users.Controllers.v1
         /// Deletes user
         /// </summary>
         /// <param name="userId"></param>
-        [HttpDelete("{userId}")]
+        [HttpDelete("{userId:guid}")]
         public async Task<IActionResult> DeleteAsync([FromRoute] string userId)
         {
             var result = await _userService.DeleteAsync(userId);

@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 using Warehouse.Core.Common;
+using Warehouse.Core.DTO;
 using Warehouse.Core.DTO.Product;
 using Warehouse.Domain;
 
@@ -21,51 +22,57 @@ namespace Warehouse.Core.Interfaces.Services
         /// <returns>Product</returns>
         Task<Result<ProductDto>> GetAsync(string id);
 
+        public Task<Result<PageDataDto<ProductDto>>> GetPageAsync(int page, int pageSize);
+
+        Task<Result<byte[]>> GetExportFileAsync();
+
         /// <summary>
         /// Creates, sets to cache, file system
         /// </summary>
         /// <param name="product"></param>
+        /// <param name="userName"></param>
         /// <returns>Created product</returns>
-        Task<Result<ProductDto>> CreateAsync(ProductModelDto product);
+        Task<Result<ProductDto>> CreateAsync(ProductModelDto product, string userName);
 
         /// <summary>
         /// Updates product in database, cache, filesystem
         /// </summary>
         /// <param name="productId"></param>
         /// <param name="product"></param>
+        /// <param name="userName"></param>
         /// <returns>Updated product</returns>
-        Task<Result<ProductDto>> UpdateAsync(string productId, ProductModelDto product);
+        Task<Result<ProductDto>> UpdateAsync(string productId, ProductModelDto product, string userName);
 
         /// <summary>
         /// Deletes product from cache, file system, database
         /// </summary>
         /// <param name="id"></param>
         Task<Result<object>> DeleteAsync(string id);
-        
+
         /// <summary>
         /// Deletes manufacturer from product
         /// </summary>
         /// <param name="manufacturerId"></param>
         Task DeleteManufacturerFromProductAsync(string manufacturerId);
-        
+
         /// <summary>
         /// Updates manufacturer in product
         /// </summary>
         /// <param name="manufacturer"></param>
         Task UpdateManufacturerInProductsAsync(Manufacturer manufacturer);
-        
+
         /// <summary>
         /// Deletes customer from product
         /// </summary>
         /// <param name="customerId"></param>
         Task DeleteCustomerFromProductAsync(string customerId);
-        
+
         /// <summary>
         /// Creates received manufacturer
         /// </summary>
         /// <param name="manufacturer"></param>
         Task CreateManufacturerAsync(Manufacturer manufacturer);
-        
+
         /// <summary>
         /// Creates received customer
         /// </summary>

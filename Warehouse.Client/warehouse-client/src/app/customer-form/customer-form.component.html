@@ -1,0 +1,46 @@
+<h2 mat-dialog-title>Customer</h2>
+<mat-dialog-content class="mat-typography">
+  <form [formGroup]="formControl" (ngSubmit)="ok()" class="d-flex flex-column justify-content-center">
+    <mat-form-field class="pb-3">
+      <mat-label>First name</mat-label>
+      <label>
+        <input matInput type="text" formControlName="firstName" [errorStateMatcher]="matcher">
+      </label>
+      <mat-error *ngIf="formControl.get('firstName')?.hasError('required')">Fullname required</mat-error>
+      <mat-error *ngIf="formControl.get('firstName')?.hasError('minlength')">Minimum length is 5</mat-error>
+    </mat-form-field>
+
+    <mat-form-field class="pb-3">
+      <mat-label>Last name</mat-label>
+      <label>
+        <input matInput type="text" formControlName="lastName" [errorStateMatcher]="matcher">
+      </label>
+      <mat-error *ngIf="formControl.get('lastName')?.hasError('minlength')">Minimum length is 5</mat-error>
+    </mat-form-field>
+
+    <mat-form-field class="pb-3">
+      <mat-label>Email</mat-label>
+      <label>
+        <input matInput type="email" formControlName="email" [errorStateMatcher]="matcher">
+      </label>
+      <mat-error *ngIf="formControl.get('email')?.hasError('required')">Email required</mat-error>
+      <mat-error *ngIf="formControl.get('email')?.hasError('email')">Email is incorrect</mat-error>
+    </mat-form-field>
+
+    <mat-form-field class="pb-3">
+      <mat-label>Phone</mat-label>
+      <label>
+        <input matInput type="text" formControlName="phone" [errorStateMatcher]="matcher">
+      </label>
+      <mat-error *ngIf="formControl.get('phone')?.hasError('required')">Phone required</mat-error>
+      <mat-error *ngIf="formControl.get('phone')?.hasError('pattern')">Phone is incorrect</mat-error>
+    </mat-form-field>
+
+    <div class="d-flex justify-content-end pb-3">
+      <button class="m-1" mat-button mat-dialog-close cdkFocusInitial>Cancel</button>
+      <button class="m-1" type="submit" mat-raised-button [disabled]="formControl.invalid" mat-button (click)="ok()">
+        Ok
+      </button>
+    </div>
+  </form>
+</mat-dialog-content>

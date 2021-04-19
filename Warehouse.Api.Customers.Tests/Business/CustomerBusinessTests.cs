@@ -7,6 +7,7 @@ using Moq;
 using NUnit.Framework;
 using Warehouse.Api.Customers.Business;
 using Warehouse.Core.Common;
+using Warehouse.Core.DTO;
 using Warehouse.Core.DTO.Customer;
 using Warehouse.Core.Interfaces.Messaging.Sender;
 using Warehouse.Core.Interfaces.Repositories;
@@ -83,7 +84,7 @@ namespace Warehouse.Api.Customers.Tests.Business
         {
             ConfigureCreate();
 
-            var result = await _customerService.CreateAsync(_customer);
+            var result = await _customerService.CreateAsync(_customer, "a");
 
             Assert.That(result.Data, Is.EqualTo(_customer));
         }
@@ -105,20 +106,31 @@ namespace Warehouse.Api.Customers.Tests.Business
 
             Assert.That(result.Data, Is.EqualTo(null));
         }
+        
+        [Test]
+        public async Task GetPageAsync_WhenCalled_ReturnsPageDateDtoOfCustomerDto()
+        {
+            var expected = ConfigureGetPage();
 
+            var result = await _customerService.GetPageAsync(1, 1);
+
+            Assert.That(result.Data, Is.EqualTo(expected));
+        }
+
+        
         private List<CustomerDto> ConfigureGetAll()
         {
             List<CustomerDto> customers = new() {_customer};
             List<Customer> customersFromDb = new() {_dbCustomer};
-            _customerRepository.Setup(ur => ur.GetAllAsync()).ReturnsAsync(customersFromDb);
+            _customerRepository.Setup(cr => cr.GetAllAsync()).ReturnsAsync(customersFromDb);
             _mapper.Setup(m => m.Map<List<CustomerDto>>(customersFromDb)).Returns(customers);
             return customers;
         }
 
         private void ConfigureGet(Customer dbCustomer, Customer fileCustomer)
         {
-            _customerRepository.Setup(ur => ur.GetAsync(_dbCustomer.Id)).ReturnsAsync(dbCustomer);
-            _fileService.Setup(ur => ur.ReadFromFileAsync<Customer>(It.IsAny<string>(), It.IsAny<string>()))
+            _customerRepository.Setup(cr => cr.GetAsync(_dbCustomer.Id)).ReturnsAsync(dbCustomer);
+            _fileService.Setup(fs => fs.ReadFromFileAsync<Customer>(It.IsAny<string>(), It.IsAny<string>()))
                 .ReturnsAsync(fileCustomer);
             _mapper.Setup(m => m.Map<CustomerDto>(_dbCustomer)).Returns(_customer);
         }
@@ -131,7 +143,20 @@ namespace Warehouse.Api.Customers.Tests.Business
 
         private void ConfigureDelete(Customer customer)
         {
-            _customerRepository.Setup(ur => ur.GetAsync(_dbCustomer.Id)).ReturnsAsync(customer);
+            _customerRepository.Setup(cr => cr.GetAsync(_dbCustomer.Id)).ReturnsAsync(customer);
+        }
+        
+        private PageDataDto<CustomerDto> ConfigureGetPage()
+        {
+            List<CustomerDto> customerDtos = new();
+            List<Customer> customers = new();
+            PageDataDto<CustomerDto> expected = new(customerDtos, 1);
+            _customerRepository.Setup(cr => cr.GetPageAsync(1, 1))
+                .ReturnsAsync(customers);
+            _customerRepository.Setup(cr => cr.GetCountAsync())
+                .ReturnsAsync(1);
+            _mapper.Setup(m => m.Map<List<CustomerDto>>(customers)).Returns(customerDtos);
+            return expected;
         }
     }
 }

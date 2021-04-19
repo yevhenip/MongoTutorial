@@ -11,6 +11,10 @@ namespace Warehouse.Core.Interfaces.Repositories
         /// </summary>
         /// <returns>List of manufacturers</returns>
         Task<List<Manufacturer>> GetAllAsync();
+        
+        public Task<List<Manufacturer>> GetPageAsync(int page, int pageSize);
+
+        public Task<long> GetCountAsync();
 
         /// <summary>
         /// Returns manufacturer in database based on provided id

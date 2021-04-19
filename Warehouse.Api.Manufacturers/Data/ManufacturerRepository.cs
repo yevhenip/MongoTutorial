@@ -13,13 +13,26 @@ namespace Warehouse.Api.Manufacturers.Data
 
         public ManufacturerRepository(IMongoClient client)
         {
-            var db = client.GetDatabase("Manufacturers");
+            var db = client.GetDatabase("Warehouse_manufacturers");
             _manufacturerCollection = db.GetCollection<Manufacturer>("manufacturers");
         }
 
         public Task<List<Manufacturer>> GetAllAsync()
         {
             return _manufacturerCollection.Find(_ => true).ToListAsync();
+        }
+
+        public Task<List<Manufacturer>> GetPageAsync(int page, int pageSize)
+        {
+            return _manufacturerCollection.Find(_ => true)
+                .Skip((page - 1) * pageSize)
+                .Limit(pageSize)
+                .ToListAsync();
+        }
+
+        public Task<long> GetCountAsync()
+        {
+            return _manufacturerCollection.CountDocumentsAsync(_ => true);
         }
 
         public Task<Manufacturer> GetAsync(string id)

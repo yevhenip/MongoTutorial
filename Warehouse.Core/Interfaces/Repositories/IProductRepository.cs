@@ -12,6 +12,11 @@ namespace Warehouse.Core.Interfaces.Repositories
         /// <returns>List of products</returns>
         Task<List<Product>> GetAllAsync();
 
+
+        public Task<List<Product>> GetPageAsync(int page, int pageSize);
+
+        public Task<long> GetCountAsync();
+
         /// <summary>
         /// Gets product in database based on provided id
         /// </summary>
@@ -43,12 +48,12 @@ namespace Warehouse.Core.Interfaces.Repositories
         /// <param name="manufacturerId"></param>
         /// <returns>List of products</returns>
         Task<List<Product>> GetRangeByManufacturerId(string manufacturerId);
-        
+
         /// <summary>
         /// Gets products in database based on customer id
         /// </summary>
         /// <param name="customerId"></param>
         /// <returns>List of products</returns>
-        Task<Product> GetByCustomerId(string customerId);
+        Task<List<Product>> GetByCustomerId(string customerId);
     }
 }

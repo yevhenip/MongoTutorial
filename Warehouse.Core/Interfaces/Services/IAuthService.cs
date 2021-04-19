@@ -12,8 +12,8 @@ namespace Warehouse.Core.Interfaces.Services
         /// </summary>
         /// <param name="register"></param>
         /// <returns>Created user</returns>
-        Task<Result<UserDto>> RegisterAsync(RegisterDto register);
-        
+        Task<Result<UserAuthenticatedDto>> RegisterAsync(RegisterDto register);
+
         /// <summary>
         /// Logins user and sends message to update user
         /// </summary>
@@ -21,7 +21,7 @@ namespace Warehouse.Core.Interfaces.Services
         /// <param name="sessionId"></param>
         /// <returns>Authenticated user with bearer and refresh tokens</returns>
         Task<Result<UserAuthenticatedDto>> LoginAsync(LoginDto login, string sessionId);
-        
+
         /// <summary>
         /// Refreshes user's session and sends message to update user
         /// </summary>
@@ -30,7 +30,7 @@ namespace Warehouse.Core.Interfaces.Services
         /// <param name="sessionId"></param>
         /// <returns>Authenticated user with bearer and refresh tokens</returns>
         Task<Result<UserAuthenticatedDto>> RefreshTokenAsync(string userId, TokenDto token, string sessionId);
-        
+
         /// <summary>
         /// Invalidate user's session id and sends message to update user
         /// </summary>

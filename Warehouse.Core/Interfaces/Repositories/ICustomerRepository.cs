@@ -12,6 +12,10 @@ namespace Warehouse.Core.Interfaces.Repositories
         /// </summary>
         /// <returns>List of customers</returns>
         Task<List<Customer>> GetAllAsync();
+        
+        public Task<List<Customer>> GetPageAsync(int page, int pageSize);
+
+        public Task<long> GetCountAsync();
 
         /// <summary>
         /// Gets customer in database based on provided id

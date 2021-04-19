@@ -14,5 +14,7 @@
         
         public const string CreateUserQueue = "CreateUserQueue";
         public const string UpdateUserQueue = "UpdateUserQueue";
+        
+        public const string CreateLog = "CreateLog";
     }
 }

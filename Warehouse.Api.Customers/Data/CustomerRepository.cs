@@ -12,7 +12,7 @@ namespace Warehouse.Api.Customers.Data
 
         public CustomerRepository(IMongoClient client)
         {
-            var db = client.GetDatabase("Customers");
+            var db = client.GetDatabase("Warehouse_customers");
             _customerCollection = db.GetCollection<Customer>("customers");
         }
 
@@ -24,6 +24,19 @@ namespace Warehouse.Api.Customers.Data
         public Task<Customer> GetAsync(string id)
         {
             return _customerCollection.Find(p => p.Id == id).SingleOrDefaultAsync();
+        }
+        
+        public Task<List<Customer>> GetPageAsync(int page, int pageSize)
+        {
+            return _customerCollection.Find(_ => true)
+                .Skip((page - 1) * pageSize)
+                .Limit(pageSize)
+                .ToListAsync();
+        }
+        
+        public Task<long> GetCountAsync()
+        {
+            return _customerCollection.CountDocumentsAsync(_ => true);
         }
 
         public Task CreateAsync(Customer customer)

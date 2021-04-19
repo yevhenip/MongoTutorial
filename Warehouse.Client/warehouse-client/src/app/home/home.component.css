@@ -1,0 +1,28 @@
+.mat-form-field {
+  font-size: 14px;
+  width: 100%;
+}
+
+td, th {
+  width: 25%;
+  border-left: 1px rgba(0, 0, 0, 0.12) solid;
+  padding: 0 24px !important;
+}
+
+table {
+  text-align: center !important;
+  width: 100%;
+}
+
+.mat-header-cell {
+  text-align: center;
+}
+
+ul {
+  list-style-type: none;
+}
+
+.log{
+  max-height: 32em;
+  overflow-y: scroll;
+}

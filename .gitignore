@@ -27,7 +27,7 @@ x86/
 bld/
 [Bb]in/
 [Oo]bj/
-[Ll]og/
+[L]og/
 [Ll]ogs/
 
 # Visual Studio 2015/2017 cache/options directory
@@ -84,7 +84,7 @@ StyleCopReport.xml
 *.tmp
 *.tmp_proj
 *_wpftmp.csproj
-*.log
+*.[L]og
 *.vspscc
 *.vssscc
 .builds
@@ -440,7 +440,9 @@ $RECYCLE.BIN/
 !.vscode/launch.json
 !.vscode/extensions.json
 
-/MongoTutorial.Api/wwwroot/Manufacturers/
-/MongoTutorial.Api/wwwroot/Products/
-/MongoTutorial.Api/wwwroot/Users/
+/Warehouse.Api/wwwroot/Manufacturers/
+/Warehouse.Api/wwwroot/Products/
+/Warehouse.Api/wwwroot/Users/
+/Warehouse.Api/wwwroot/Customers/
+Warehouse.Client/warehouse-client/node_modules
 /.run/

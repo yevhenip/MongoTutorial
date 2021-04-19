@@ -11,6 +11,8 @@ namespace Warehouse.Api.Validators
             RuleFor(p => p.Name).NotEmpty()
                 .WithMessage("Name is required");
 
+            RuleFor(p => p.DateOfReceipt).NotEmpty()
+                .WithMessage("Date of receipt is required");
             RuleFor(p => p.DateOfReceipt).LessThan(DateTime.Now)
                 .WithMessage("Impossible DateTime");
             

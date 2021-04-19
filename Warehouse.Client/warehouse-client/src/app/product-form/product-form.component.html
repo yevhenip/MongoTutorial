@@ -1,0 +1,46 @@
+<h2 mat-dialog-title>Product</h2>
+<mat-dialog-content class="mat-typography">
+  <form [formGroup]="formControl" (ngSubmit)="ok()" class="d-flex flex-column justify-content-center">
+    <mat-form-field class="pb-3">
+      <mat-label>Name</mat-label>
+      <label>
+        <input matInput type="text" formControlName="name" [errorStateMatcher]="matcher">
+      </label>
+      <mat-error *ngIf="formControl.get('name')?.hasError('required')">Name required</mat-error>
+      <mat-error *ngIf="formControl.get('name')?.hasError('minlength')">Minimum length is 5</mat-error>
+    </mat-form-field>
+
+    <mat-form-field class="pb-3">
+      <mat-label>Date of receipt</mat-label>
+      <label>
+        <input matInput [matDatepickerFilter]="myFilter" [matDatepicker]="picker" formControlName="dateOfReceipt" [errorStateMatcher]="matcher">
+        <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+        <mat-datepicker #picker></mat-datepicker>
+      </label>
+      <mat-error *ngIf="formControl.get('dateOfReceipt')?.hasError('required')">Date of receipt required</mat-error>
+    </mat-form-field>
+
+    <mat-form-field class="pb-3">
+      <mat-label>Manufacturers</mat-label>
+      <mat-select formControlName="manufacturerIds" name="manufacturerIds" multiple>
+        <mat-option *ngFor="let manufacturer of manufacturers" [value]="manufacturer.id">
+          {{manufacturer.name}}
+        </mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field class="pb-3">
+      <mat-label>Customer</mat-label>
+      <mat-select formControlName="customerId" name="customerId">
+        <mat-option *ngFor="let customer of customers" [value]="customer.id">
+          {{customer.fullName}}
+        </mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <div class="d-flex justify-content-end pb-3">
+      <button class="m-1" mat-button mat-dialog-close cdkFocusInitial>Cancel</button>
+      <button class="m-1" type="submit" mat-raised-button [disabled]="formControl.invalid" mat-button (click)="ok()">Ok</button>
+    </div>
+  </form>
+</mat-dialog-content>

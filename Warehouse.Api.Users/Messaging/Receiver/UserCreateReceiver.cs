@@ -2,12 +2,12 @@
 using RabbitMQ.Client;
 using Warehouse.Api.Extensions;
 using Warehouse.Api.Messaging.Receiver;
-using Warehouse.Core.DTO.Users;
 using Warehouse.Core.Interfaces.Services;
+using Warehouse.Domain;
 
 namespace Warehouse.Api.Users.Messaging.Receiver
 {
-    public class UserCreateReceiver : Receiver<UserDto>
+    public class UserCreateReceiver : Receiver<User>
     {
         private const string Queue = Queues.CreateUserQueue;
         private readonly IUserService _userService;
@@ -17,7 +17,7 @@ namespace Warehouse.Api.Users.Messaging.Receiver
             _userService = userService;
         }
 
-        protected override async Task HandleMessage(UserDto user)
+        protected override async Task HandleMessage(User user)
         {
             await _userService.CreateAsync(user);
         }

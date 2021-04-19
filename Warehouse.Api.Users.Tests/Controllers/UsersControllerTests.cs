@@ -1,11 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Security.Claims;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
 using NUnit.Framework;
 using Warehouse.Api.Users.Controllers.v1;
 using Warehouse.Core.Common;
+using Warehouse.Core.DTO;
 using Warehouse.Core.DTO.Users;
 using Warehouse.Core.Interfaces.Services;
 
@@ -57,8 +60,9 @@ namespace Warehouse.Api.Users.Tests.Controllers
         [Test]
         public async Task UpdateAsync_WhenCalled_ReturnsUser()
         {
+            ConfigureUser();
             UserModelDto userDto = new("a", "a", "a", "a");
-            _userService.Setup(us => us.UpdateAsync(_user.Id, userDto))
+            _userService.Setup(us => us.UpdateAsync(_user.Id, userDto, "a"))
                 .ReturnsAsync(Result<UserDto>.Success(_user));
 
             var result = await _usersController.UpdateAsync(_user.Id, userDto) as OkObjectResult;
@@ -75,6 +79,31 @@ namespace Warehouse.Api.Users.Tests.Controllers
             var result = await _usersController.DeleteAsync(_user.Id) as OkObjectResult;
 
             Assert.That(result?.Value, Is.EqualTo(null));
+        }
+        
+        [Test]
+        public async Task GetPageAsync_WhenCalled_ReturnsPageDataDtoOfUserDto()
+        {
+            PageDataDto<UserDto> page = new(new List<UserDto>(), 3);
+            _userService.Setup(us => us.GetPageAsync(1, 1))
+                .ReturnsAsync(Result<PageDataDto<UserDto>>.Success(page));
+
+            var result = await _usersController.GetPageAsync(1, 1) as OkObjectResult;
+
+            Assert.That(result?.Value, Is.EqualTo(page));
+        }
+        
+        private void ConfigureUser()
+        {
+            ClaimsPrincipal user = new(new ClaimsIdentity(new Claim[]
+            {
+                new("UserName", "a"),
+                new("Id", "a")
+            }));
+            _usersController.ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext {User = user}
+            };
         }
     }
 }
