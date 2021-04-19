@@ -8,6 +8,7 @@ using Moq;
 using NUnit.Framework;
 using Warehouse.Api.Manufacturers.Business;
 using Warehouse.Core.Common;
+using Warehouse.Core.DTO;
 using Warehouse.Core.DTO.Manufacturer;
 using Warehouse.Core.Interfaces.Messaging.Sender;
 using Warehouse.Core.Interfaces.Repositories;
@@ -84,17 +85,17 @@ namespace Warehouse.Api.Manufacturers.Tests.Business
         {
             var manufacturer = ConfigureCreate();
 
-            var result = await _manufacturerService.CreateAsync(manufacturer);
+            var result = await _manufacturerService.CreateAsync(manufacturer, "a");
 
             Assert.That(result.Data, Is.EqualTo(_manufacturer));
         }
-        
+
         [Test]
         public async Task UpdateAsync_WhenWithCalledUnCashedManufacturer_ReturnsManufacturer()
         {
             var manufacturer = ConfigureUpdate(_dbManufacturer, null);
 
-            var result = await _manufacturerService.UpdateAsync(_dbManufacturer.Id, manufacturer);
+            var result = await _manufacturerService.UpdateAsync(_dbManufacturer.Id, manufacturer, "a");
 
             Assert.That(result.Data, Is.EqualTo(_manufacturer));
         }
@@ -104,7 +105,7 @@ namespace Warehouse.Api.Manufacturers.Tests.Business
         {
             var manufacturer = ConfigureUpdate(null, _dbManufacturer);
 
-            var result = await _manufacturerService.UpdateAsync(_dbManufacturer.Id, manufacturer);
+            var result = await _manufacturerService.UpdateAsync(_dbManufacturer.Id, manufacturer, "a");
 
             Assert.That(result.Data, Is.EqualTo(_manufacturer));
         }
@@ -114,7 +115,8 @@ namespace Warehouse.Api.Manufacturers.Tests.Business
         {
             var manufacturer = ConfigureUpdate(null, null);
 
-            Assert.ThrowsAsync<Result<Manufacturer>>(async () => await _manufacturerService.UpdateAsync(_dbManufacturer.Id, manufacturer));
+            Assert.ThrowsAsync<Result<Manufacturer>>(async () =>
+                await _manufacturerService.UpdateAsync(_dbManufacturer.Id, manufacturer, "a"));
         }
 
         [Test]
@@ -145,19 +147,29 @@ namespace Warehouse.Api.Manufacturers.Tests.Business
             Assert.That(result.Data, Is.EqualTo(manufacturers));
         }
 
+        [Test]
+        public async Task GetPageAsync_WhenCalled_ReturnsPageDateDtoOfManufacturerDto()
+        {
+            var expected = ConfigureGetPage();
+
+            var result = await _manufacturerService.GetPageAsync(1, 1);
+
+            Assert.That(result.Data, Is.EqualTo(expected));
+        }
+
         private List<ManufacturerDto> ConfigureGetAll()
         {
             List<ManufacturerDto> manufacturers = new() {_manufacturer};
             List<Manufacturer> manufacturersFromDb = new() {_dbManufacturer};
-            _manufacturerRepository.Setup(ur => ur.GetAllAsync()).ReturnsAsync(manufacturersFromDb);
+            _manufacturerRepository.Setup(mr => mr.GetAllAsync()).ReturnsAsync(manufacturersFromDb);
             _mapper.Setup(m => m.Map<List<ManufacturerDto>>(manufacturersFromDb)).Returns(manufacturers);
             return manufacturers;
         }
 
         private void ConfigureGet(Manufacturer dbManufacturer, Manufacturer fileManufacturer)
         {
-            _manufacturerRepository.Setup(ur => ur.GetAsync(_dbManufacturer.Id)).ReturnsAsync(dbManufacturer);
-            _fileService.Setup(ur => ur.ReadFromFileAsync<Manufacturer>(It.IsAny<string>(), It.IsAny<string>()))
+            _manufacturerRepository.Setup(ms => ms.GetAsync(_dbManufacturer.Id)).ReturnsAsync(dbManufacturer);
+            _fileService.Setup(fs => fs.ReadFromFileAsync<Manufacturer>(It.IsAny<string>(), It.IsAny<string>()))
                 .ReturnsAsync(fileManufacturer);
             _mapper.Setup(m => m.Map<ManufacturerDto>(_dbManufacturer)).Returns(_manufacturer);
         }
@@ -173,17 +185,17 @@ namespace Warehouse.Api.Manufacturers.Tests.Business
         private ManufacturerModelDto ConfigureUpdate(Manufacturer dbManufacturer, Manufacturer fileManufacturer)
         {
             ManufacturerModelDto manufacturer = new("a", "a");
-            _manufacturerRepository.Setup(ur => ur.GetAsync(_dbManufacturer.Id)).ReturnsAsync(dbManufacturer);
-            _fileService.Setup(ur => ur.ReadFromFileAsync<Manufacturer>(It.IsAny<string>(), It.IsAny<string>()))
+            _manufacturerRepository.Setup(ms => ms.GetAsync(_dbManufacturer.Id)).ReturnsAsync(dbManufacturer);
+            _fileService.Setup(fs => fs.ReadFromFileAsync<Manufacturer>(It.IsAny<string>(), It.IsAny<string>()))
                 .ReturnsAsync(fileManufacturer);
             _mapper.Setup(m => m.Map<ManufacturerDto>(manufacturer)).Returns(_manufacturer);
 
             return manufacturer;
         }
-        
+
         private void ConfigureDelete(Manufacturer manufacturer)
         {
-            _manufacturerRepository.Setup(ur => ur.GetAsync(_dbManufacturer.Id)).ReturnsAsync(manufacturer);
+            _manufacturerRepository.Setup(ms => ms.GetAsync(_dbManufacturer.Id)).ReturnsAsync(manufacturer);
         }
 
         private (List<ManufacturerDto>, IEnumerable<string>) ConfigureGetRange()
@@ -191,10 +203,23 @@ namespace Warehouse.Api.Manufacturers.Tests.Business
             List<ManufacturerDto> manufacturers = new() {_manufacturer};
             List<Manufacturer> manufacturersFromDb = new() {_dbManufacturer};
             var manufacturerIds = manufacturers.Select(m => m.Id);
-            _manufacturerRepository.Setup(ur => ur.GetRangeAsync(manufacturerIds))
+            _manufacturerRepository.Setup(ms => ms.GetRangeAsync(manufacturerIds))
                 .ReturnsAsync(manufacturersFromDb);
             _mapper.Setup(m => m.Map<List<ManufacturerDto>>(manufacturersFromDb)).Returns(manufacturers);
             return (manufacturers, manufacturerIds);
+        }
+
+        private PageDataDto<ManufacturerDto> ConfigureGetPage()
+        {
+            List<ManufacturerDto> manufacturerDtos = new();
+            List<Manufacturer> manufacturers = new();
+            PageDataDto<ManufacturerDto> expected = new(manufacturerDtos, 1);
+            _manufacturerRepository.Setup(mr => mr.GetPageAsync(1, 1))
+                .ReturnsAsync(manufacturers);
+            _manufacturerRepository.Setup(mr => mr.GetCountAsync())
+                .ReturnsAsync(1);
+            _mapper.Setup(m => m.Map<List<ManufacturerDto>>(manufacturers)).Returns(manufacturerDtos);
+            return expected;
         }
     }
 }

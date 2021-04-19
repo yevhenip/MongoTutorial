@@ -6,29 +6,31 @@ import {Manufacturer} from '../models/manufacturer';
 import {MatPaginator} from "@angular/material/paginator";
 import {ManufacturerService} from '../services/data/manufacturers/manufacturer.service';
 import {AdminPanelComponent} from '../admin-panel/admin-panel.component';
+import {DataPanel} from '../abstract/data-panel';
+import {LogService} from '../services/data/log/log.service';
 
 @Component({
   selector: 'manufacturer-panel',
   templateUrl: './manufacturer-panel.component.html',
   styleUrls: ['./manufacturer-panel.component.css']
 })
-export class ManufacturerPanelComponent extends AdminPanelComponent implements OnInit {
+export class ManufacturerPanelComponent extends DataPanel implements OnInit {
 
-  constructor(private manufacturerService: ManufacturerService, public dialog: MatDialog) {
-    super(manufacturerService);
+  constructor(private manufacturerService: ManufacturerService, public dialog: MatDialog, logService: LogService) {
+    super(manufacturerService, logService);
   }
 
-  ngOnInit() : Promise<any> {
+  ngOnInit(): Promise<any> {
     super.ngOnInit();
     this.displayedColumns = ['name', 'address', 'editDelete'];
     return Promise.resolve();
   }
 
   openDialogForCreation() {
-    super.openDialogForCreation(this.dialog, ManufacturerFormComponent);
+    super.openDialogForCreation(this.dialog, ManufacturerFormComponent, 'manufacturer');
   }
 
   openDialogForEditing(manufacturer: Manufacturer) {
-    super.openDialogForEditing(manufacturer, this.dialog, ManufacturerFormComponent);
+    super.openDialogForEditing(manufacturer, this.dialog, ManufacturerFormComponent, 'manufacturer');
   }
 }

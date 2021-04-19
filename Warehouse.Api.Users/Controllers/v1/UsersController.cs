@@ -24,21 +24,28 @@ namespace Warehouse.Api.Users.Controllers.v1
             return Ok(result.Data);
         }
         
-        [HttpGet("{userId}")]
+        [HttpGet("{userId:guid}")]
         public async Task<IActionResult> GetAsync([FromRoute] string userId)
         {
             var result = await _userService.GetAsync(userId);
             return Ok(result.Data);
         }
         
-        [HttpPut("{userId}")]
+        [HttpGet("{page:int}/{pageSize:int}")]
+        public async Task<IActionResult> GetPageAsync([FromRoute] int page, [FromRoute] int pageSize)
+        {
+            var result = await _userService.GetPageAsync(page, pageSize);
+            return Ok(result.Data);
+        }
+        
+        [HttpPut("{userId:guid}")]
         public async Task<IActionResult> UpdateAsync([FromRoute] string userId, UserModelDto user)
         {
-            var result = await _userService.UpdateAsync(userId, user);
+            var result = await _userService.UpdateAsync(userId, user, UserName);
             return Ok(result.Data);
         }
 
-        [HttpDelete("{userId}")]
+        [HttpDelete("{userId:guid}")]
         public async Task<IActionResult> DeleteAsync([FromRoute] string userId)
         {
             var result = await _userService.DeleteAsync(userId);

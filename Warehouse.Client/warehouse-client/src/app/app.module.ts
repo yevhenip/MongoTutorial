@@ -23,6 +23,7 @@ import {AuthService} from "./services/auth/auth.service";
 import {DataService} from "./services/data/data.service";
 import {UserFormComponent} from "./user-form/user-form.component";
 import {UserPanelComponent} from "./user-panel/user-panel.component";
+import { LogoutConfirmComponent } from './logout-confirm/logout-confirm.component';
 
 @NgModule({
   declarations: [
@@ -38,7 +39,8 @@ import {UserPanelComponent} from "./user-panel/user-panel.component";
     CustomerPanelComponent,
     ManufacturerFormComponent,
     UserFormComponent,
-    CustomerFormComponent
+    CustomerFormComponent,
+    LogoutConfirmComponent
   ],
   imports: [
     BrowserModule,

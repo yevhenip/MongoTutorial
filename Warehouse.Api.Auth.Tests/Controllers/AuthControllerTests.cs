@@ -37,13 +37,14 @@ namespace Warehouse.Api.Auth.Tests.Controllers
         [Test]
         public async Task Register_WhenCalled_ReturnsUserDto()
         {
+            var auth = new UserAuthenticatedDto(_user, It.IsAny<string>(), It.IsAny<string>());
             RegisterDto register = new("a", "a", "a", "a", "a", "a");
-            _authService.Setup(us => us.RegisterAsync(register))
-                .ReturnsAsync(Result<UserDto>.Success(_user));
+            _authService.Setup(@as => @as.RegisterAsync(register))
+                .ReturnsAsync(Result<UserAuthenticatedDto>.Success(auth));
 
             var result = await _authController.Register(register) as OkObjectResult;
 
-            Assert.That(result?.Value, Is.EqualTo(_user));
+            Assert.That(result?.Value, Is.EqualTo(auth));
         }
 
         [Test]
@@ -51,7 +52,7 @@ namespace Warehouse.Api.Auth.Tests.Controllers
         {
             LoginDto login = new("a", "a");
             UserAuthenticatedDto authenticated = new(_user, "a", "a");
-            _authService.Setup(us => us.LoginAsync(login, It.IsAny<string>()))
+            _authService.Setup(@as => @as.LoginAsync(login, It.IsAny<string>()))
                 .ReturnsAsync(Result<UserAuthenticatedDto>.Success(authenticated));
 
             var result = await _authController.Login(login) as OkObjectResult;
@@ -65,7 +66,7 @@ namespace Warehouse.Api.Auth.Tests.Controllers
             TokenDto token = new("b");
             UserAuthenticatedDto authenticated = new(_user, "a", "a");
             ConfigureUser();
-            _authService.Setup(us => us.RefreshTokenAsync(_user.Id, token, It.IsAny<string>()))
+            _authService.Setup(@as => @as.RefreshTokenAsync(_user.Id, token, It.IsAny<string>()))
                 .ReturnsAsync(Result<UserAuthenticatedDto>.Success(authenticated));
 
             var result = await _authController.RefreshToken(token) as OkObjectResult;
@@ -77,7 +78,7 @@ namespace Warehouse.Api.Auth.Tests.Controllers
         public async Task Logout_WhenCalled_ReturnsNull()
         {
             ConfigureUser();
-            _authService.Setup(us => us.LogoutAsync(_user.Id))
+            _authService.Setup(@as => @as.LogoutAsync(_user.Id))
                 .ReturnsAsync(Result<object>.Success());
 
             await _authController.Logout();

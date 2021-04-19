@@ -10,7 +10,7 @@
           <div id="profileImage"><small>{{userName.slice(0, 1)?.toUpperCase()}}</small></div>
         </div>
         <div ngbDropdownMenu class="dropdown-menu" aria-labelledby="dropdown01">
-          <a class="dropdown-item" routerLink="/my/users/">My Settings</a>
+          <a class="dropdown-item" routerLink="">My Settings</a>
           <a *ngIf="authService.isAdmin()" class="dropdown-item" routerLink="/admin">Manage Admin</a>
         </div>
       </div>

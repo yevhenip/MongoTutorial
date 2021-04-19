@@ -1,5 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Text.Json;
 using System.Threading.Tasks;
 using AutoMapper;
 using Microsoft.Extensions.Caching.Distributed;
@@ -7,7 +9,9 @@ using Microsoft.Extensions.Options;
 using Warehouse.Api.Business;
 using Warehouse.Api.Extensions;
 using Warehouse.Core.Common;
+using Warehouse.Core.DTO;
 using Warehouse.Core.DTO.Customer;
+using Warehouse.Core.DTO.Log;
 using Warehouse.Core.Interfaces.Messaging.Sender;
 using Warehouse.Core.Interfaces.Repositories;
 using Warehouse.Core.Interfaces.Services;
@@ -21,15 +25,13 @@ namespace Warehouse.Api.Customers.Business
         private readonly string _path = Directory.GetCurrentDirectory() + @"\..\Warehouse.Api\wwwroot\Customers\";
         private readonly CacheCustomerSettings _customerSettings;
         private readonly ICustomerRepository _customerRepository;
-        private readonly ISender _sender;
 
         public CustomerService(IOptions<CacheCustomerSettings> customerSettings, ICustomerRepository customerRepository,
-            IDistributedCache distributedCache, IMapper mapper, ISender sender, IFileService fileService) : 
-            base(distributedCache, mapper, fileService)
+            IDistributedCache distributedCache, IMapper mapper, ISender sender, IFileService fileService) :
+            base(mapper, distributedCache, sender, fileService)
         {
             _customerSettings = customerSettings.Value;
             _customerRepository = customerRepository;
-            _sender = sender;
         }
 
 
@@ -41,6 +43,16 @@ namespace Warehouse.Api.Customers.Business
             return Result<List<CustomerDto>>.Success(customers);
         }
 
+        public async Task<Result<PageDataDto<CustomerDto>>> GetPageAsync(int page, int pageSize)
+        {
+            var customersInDb = await _customerRepository.GetPageAsync(page, pageSize);
+            var count = await _customerRepository.GetCountAsync();
+            var customers = Mapper.Map<List<CustomerDto>>(customersInDb);
+            PageDataDto<CustomerDto> pageData = new(customers, count);
+
+            return Result<PageDataDto<CustomerDto>>.Success(pageData);
+        }
+        
         public async Task<Result<CustomerDto>> GetAsync(string id)
         {
             var cacheKey = $"Customer-{id}";
@@ -80,7 +92,7 @@ namespace Warehouse.Api.Customers.Business
                 CheckForNull(customerInDb);
             }
 
-            await _sender.SendMessage(id, Queues.DeleteCustomerQueue);
+            await Sender.SendMessage(id, Queues.DeleteCustomerQueue);
             await DistributedCache.RemoveAsync(cacheKey);
             await FileService.DeleteFileAsync(_path, cacheKey);
             await _customerRepository.DeleteAsync(id);
@@ -88,18 +100,22 @@ namespace Warehouse.Api.Customers.Business
             return Result<object>.Success();
         }
 
-        public async Task<Result<CustomerDto>> CreateAsync(CustomerDto customer)
+        public async Task<Result<CustomerDto>> CreateAsync(CustomerDto customer, string userName)
         {
-            
             var customerToDb = Mapper.Map<Customer>(customer);
 
             var cacheKey = $"Customer-{customerToDb.Id}";
+            LogDto log =
+                new(Guid.NewGuid().ToString(), userName, "added customer", JsonSerializer.Serialize(customerToDb,
+                    JsonSerializerOptions), DateTime.UtcNow);
+
             await DistributedCache.SetCacheAsync(cacheKey, customerToDb, _customerSettings);
             await FileService.WriteToFileAsync(customerToDb, _path, cacheKey);
 
             await _customerRepository.CreateAsync(customerToDb);
-            await _sender.SendMessage(customerToDb, Queues.CreateCustomerQueue);
-            return Result<CustomerDto>.Success(customer with{Id = customerToDb.Id});
+            await Sender.SendMessage(customerToDb, Queues.CreateCustomerQueue);
+            await Sender.SendMessage(log, Queues.CreateLog);
+            return Result<CustomerDto>.Success(customer with {Id = customerToDb.Id});
         }
     }
 }

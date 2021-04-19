@@ -4,7 +4,7 @@
     <mat-form-field class="pb-3">
       <mat-label>Name</mat-label>
       <label>
-        <input matInput type="text" formControlName="name" [errorStateMatcher]="matcher" [(ngModel)]="manufacturer.name">
+        <input matInput type="text" formControlName="name" [errorStateMatcher]="matcher">
       </label>
       <mat-error *ngIf="formControl.get('name')?.hasError('required')">Name required</mat-error>
       <mat-error *ngIf="formControl.get('name')?.hasError('minlength')">Minimum length is 5</mat-error>
@@ -13,7 +13,7 @@
     <mat-form-field class="pb-3">
       <mat-label>Address</mat-label>
       <label>
-        <input matInput type="text" formControlName="address" [errorStateMatcher]="matcher" [(ngModel)]="manufacturer.address">
+        <input matInput type="text" formControlName="address" [errorStateMatcher]="matcher">
       </label>
       <mat-error *ngIf="formControl.get('address')?.hasError('required')">Address required</mat-error>
     </mat-form-field>

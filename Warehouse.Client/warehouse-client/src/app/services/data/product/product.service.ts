@@ -9,7 +9,13 @@ import {environment} from 'src/environments/environment';
 })
 export class ProductService extends DataService {
   constructor(http: HttpClient) {
-    super(http);
-    this.url = environment.productApi;
+    super(http, environment.productApi);
+  }
+
+  getFileForExport() {
+    return this.http.get(this.url + 'export', {
+      responseType: 'blob', headers: new HttpHeaders()
+        .set('Authorization', `Bearer ${localStorage.getItem('jwtToken')}`)
+    }).toPromise();
   }
 }

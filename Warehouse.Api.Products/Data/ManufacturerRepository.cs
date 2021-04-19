@@ -22,6 +22,19 @@ namespace Warehouse.Api.Products.Data
             return _manufacturerCollection.Find(_ => true).ToListAsync();
         }
 
+        public Task<List<Manufacturer>> GetPageAsync(int page, int pageSize)
+        {
+            return _manufacturerCollection.Find(_ => true)
+                .Skip((page - 1) * pageSize)
+                .Limit(pageSize)
+                .ToListAsync();
+        }
+
+        public Task<long> GetCountAsync()
+        {
+            return _manufacturerCollection.CountDocumentsAsync(_ => true);
+        }
+
         public Task<Manufacturer> GetAsync(string id)
         {
             return _manufacturerCollection.Find(p => p.Id == id).SingleOrDefaultAsync();

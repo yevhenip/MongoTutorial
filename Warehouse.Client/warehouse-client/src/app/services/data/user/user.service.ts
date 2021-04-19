@@ -8,7 +8,6 @@ import { environment } from 'src/environments/environment';
 })
 export class UserService extends DataService {
   constructor(http: HttpClient) {
-    super(http);
-    this.url = environment.userApi;
+    super(http, environment.userApi);
   }
 }

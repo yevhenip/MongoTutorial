@@ -57,6 +57,12 @@ export class ProductFormComponent implements OnInit {
     this.customers =  await this.customerService.getAll() as Customer[];
     this.formControl.get('manufacturerIds')?.markAsTouched();
     this.formControl.get('customerId')?.markAsTouched();
+
+    this.formControl.get('name')?.setValue(this.product.name);
+    this.formControl.get('dateOfReceipt')?.setValue(this.product.dateOfReceipt);
+    this.formControl.get('dateOfReceipt')?.setValue(this.product.dateOfReceipt);
+    this.formControl.get('manufacturerIds')?.setValue(this.manufacturerIds);
+    this.formControl.get('customerId')?.setValue(this.customerId);
   }
 
 

@@ -17,3 +17,12 @@ table {
 .mat-header-cell {
   text-align: center;
 }
+
+ul {
+  list-style-type: none;
+}
+
+.log{
+  max-height: 32em;
+  overflow-y: scroll;
+}

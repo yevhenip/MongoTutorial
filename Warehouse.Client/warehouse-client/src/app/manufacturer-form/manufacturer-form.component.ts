@@ -28,6 +28,8 @@ export class ManufacturerFormComponent {
         address: ''
       } as unknown as Manufacturer;
     }
+    this.formControl.get('name')?.setValue(this.manufacturer.name);
+    this.formControl.get('address')?.setValue(this.manufacturer.address);
   }
 
   ok() {

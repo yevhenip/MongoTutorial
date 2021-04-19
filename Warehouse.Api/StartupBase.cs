@@ -63,7 +63,7 @@ namespace Warehouse.Api
             services.AddSingleton<IMongoClient, MongoClient>(_ =>
                 new MongoClient(Configuration["Data:ConnectionString"]));
             services.AddScoped<ValidateTokenSessionId>();
-            services.AddScoped<ISender, Sender>();
+            services.AddSingleton<ISender, Sender>();
             services.AddSingleton<IFileService, FileService>();
             services.AddSingleton<IUserRepository, UserRepository>();
 

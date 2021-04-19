@@ -1,7 +1,9 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using AutoMapper;
@@ -10,7 +12,10 @@ using Microsoft.Extensions.Options;
 using Warehouse.Api.Business;
 using Warehouse.Api.Extensions;
 using Warehouse.Core.Common;
+using Warehouse.Core.DTO;
+using Warehouse.Core.DTO.Log;
 using Warehouse.Core.DTO.Product;
+using Warehouse.Core.Interfaces.Messaging.Sender;
 using Warehouse.Core.Interfaces.Repositories;
 using Warehouse.Core.Interfaces.Services;
 using Warehouse.Core.Settings.CacheSettings;
@@ -30,7 +35,7 @@ namespace Warehouse.Api.Products.Business
         public ProductService(IProductRepository productRepository, IDistributedCache distributedCache,
             IOptions<CacheProductSettings> productSettings, IOptions<CacheManufacturerSettings> manufacturerSettings,
             ICustomerRepository customerRepository, IMapper mapper, IManufacturerRepository manufacturerRepository,
-            IFileService fileService) : base(distributedCache, mapper, fileService)
+            IFileService fileService, ISender sender) : base(mapper, distributedCache, sender, fileService)
         {
             _manufacturerSettings = manufacturerSettings.Value;
             _manufacturerRepository = manufacturerRepository;
@@ -45,6 +50,16 @@ namespace Warehouse.Api.Products.Business
             var products = Mapper.Map<List<ProductDto>>(productsInDb);
 
             return Result<List<ProductDto>>.Success(products);
+        }
+
+        public async Task<Result<PageDataDto<ProductDto>>> GetPageAsync(int page, int pageSize)
+        {
+            var productsInDb = await _productRepository.GetPageAsync(page, pageSize);
+            var count = await _productRepository.GetCountAsync();
+            var products = Mapper.Map<List<ProductDto>>(productsInDb);
+            PageDataDto<ProductDto> pageData = new(products, count);
+
+            return Result<PageDataDto<ProductDto>>.Success(pageData);
         }
 
         public async Task<Result<ProductDto>> GetAsync(string id)
@@ -78,20 +93,40 @@ namespace Warehouse.Api.Products.Business
             return Result<ProductDto>.Success(product);
         }
 
-        public async Task<Result<ProductDto>> CreateAsync(ProductModelDto product)
+        public async Task<Result<byte[]>> GetExportFileAsync()
+        {
+            var productsInDb = await _productRepository.GetAllAsync();
+            var exportProducts = Mapper.Map<List<ExportProduct>>(productsInDb);
+            StringBuilder builder = new();
+            foreach (var product in exportProducts)
+            {
+                builder.Append(product);
+                builder.Append(Environment.NewLine);
+            }
+
+            var bytes = Encoding.UTF8.GetBytes(builder.ToString());
+            return Result<byte[]>.Success(bytes);
+        }
+
+        public async Task<Result<ProductDto>> CreateAsync(ProductModelDto product, string userName)
         {
             var productToDb = await GetManufacturersAndCustomer(product, product.ManufacturerIds.ToList());
 
             var cacheKey = $"Product-{productToDb.Id}";
             await DistributedCache.SetCacheAsync(cacheKey, productToDb, _productSettings);
             await FileService.WriteToFileAsync(productToDb, _path, cacheKey);
-            var result = Mapper.Map<ProductDto>(productToDb);
 
+            var result = Mapper.Map<ProductDto>(productToDb);
+            LogDto log =
+                new(Guid.NewGuid().ToString(), userName, "added product", JsonSerializer.Serialize(result,
+                    JsonSerializerOptions), DateTime.UtcNow);
+
+            await Sender.SendMessage(log, Queues.CreateLog);
             await _productRepository.CreateAsync(productToDb);
             return Result<ProductDto>.Success(result);
         }
 
-        public async Task<Result<ProductDto>> UpdateAsync(string productId, ProductModelDto product)
+        public async Task<Result<ProductDto>> UpdateAsync(string productId, ProductModelDto product, string userName)
         {
             var cacheKey = $"Product-{productId}";
             Product productInDb;
@@ -106,9 +141,13 @@ namespace Warehouse.Api.Products.Business
             productInDb = await GetManufacturersAndCustomer(product, product.ManufacturerIds.ToList());
             productInDb.Id = productId;
             var result = Mapper.Map<ProductDto>(productInDb) with {Id = productId};
+            LogDto log =
+                new(Guid.NewGuid().ToString(), userName, "edited product", JsonSerializer.Serialize(result,
+                    JsonSerializerOptions), DateTime.UtcNow);
 
             await DistributedCache.SetCacheAsync(cacheKey, productInDb, _productSettings);
             await FileService.WriteToFileAsync(productInDb, _path, cacheKey);
+            await Sender.SendMessage(log, Queues.CreateLog);
             await _productRepository.UpdateAsync(productInDb);
             return Result<ProductDto>.Success(result);
         }

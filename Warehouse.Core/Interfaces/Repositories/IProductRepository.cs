@@ -8,6 +8,10 @@ namespace Warehouse.Core.Interfaces.Repositories
     {
         Task<List<Product>> GetAllAsync();
 
+        public Task<List<Product>> GetPageAsync(int page, int pageSize);
+
+        public Task<long> GetCountAsync();
+        
         Task<Product> GetAsync(string id);
 
         Task CreateAsync(Product product);

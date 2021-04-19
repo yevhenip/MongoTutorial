@@ -28,6 +28,11 @@ export class UserFormComponent {
     let array = user.fullName.split(' ');
     this.firstName = array[0];
     this.lastName = array[1];
+    this.formControl.get('firstName')?.setValue(this.firstName);
+    this.formControl.get('lastName')?.setValue(this.lastName);
+    this.formControl.get('userName')?.setValue(user.userName);
+    this.formControl.get('email')?.setValue(user.email);
+    this.formControl.get('phone')?.setValue(user.phone);
   }
 
   ok() {

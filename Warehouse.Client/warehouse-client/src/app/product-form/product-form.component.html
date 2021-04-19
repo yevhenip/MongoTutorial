@@ -4,7 +4,7 @@
     <mat-form-field class="pb-3">
       <mat-label>Name</mat-label>
       <label>
-        <input matInput type="text" formControlName="name" [errorStateMatcher]="matcher" [(ngModel)]="product.name">
+        <input matInput type="text" formControlName="name" [errorStateMatcher]="matcher">
       </label>
       <mat-error *ngIf="formControl.get('name')?.hasError('required')">Name required</mat-error>
       <mat-error *ngIf="formControl.get('name')?.hasError('minlength')">Minimum length is 5</mat-error>
@@ -13,7 +13,7 @@
     <mat-form-field class="pb-3">
       <mat-label>Date of receipt</mat-label>
       <label>
-        <input matInput [matDatepickerFilter]="myFilter" [matDatepicker]="picker" [(ngModel)]="product.dateOfReceipt"  formControlName="dateOfReceipt" [errorStateMatcher]="matcher">
+        <input matInput [matDatepickerFilter]="myFilter" [matDatepicker]="picker" formControlName="dateOfReceipt" [errorStateMatcher]="matcher">
         <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
         <mat-datepicker #picker></mat-datepicker>
       </label>
@@ -22,7 +22,7 @@
 
     <mat-form-field class="pb-3">
       <mat-label>Manufacturers</mat-label>
-      <mat-select formControlName="manufacturerIds" [(ngModel)]="manufacturerIds" name="manufacturerIds" multiple>
+      <mat-select formControlName="manufacturerIds" name="manufacturerIds" multiple>
         <mat-option *ngFor="let manufacturer of manufacturers" [value]="manufacturer.id">
           {{manufacturer.name}}
         </mat-option>
@@ -31,7 +31,7 @@
 
     <mat-form-field class="pb-3">
       <mat-label>Customer</mat-label>
-      <mat-select formControlName="customerId" name="customerId" [(ngModel)]="customerId">
+      <mat-select formControlName="customerId" name="customerId">
         <mat-option *ngFor="let customer of customers" [value]="customer.id">
           {{customer.fullName}}
         </mat-option>

@@ -8,8 +8,10 @@ using Moq;
 using NUnit.Framework;
 using Warehouse.Api.Products.Business;
 using Warehouse.Core.Common;
+using Warehouse.Core.DTO;
 using Warehouse.Core.DTO.Customer;
 using Warehouse.Core.DTO.Product;
+using Warehouse.Core.Interfaces.Messaging.Sender;
 using Warehouse.Core.Interfaces.Repositories;
 using Warehouse.Core.Interfaces.Services;
 using Warehouse.Core.Settings.CacheSettings;
@@ -26,7 +28,7 @@ namespace Warehouse.Api.Products.Tests.Business
             new CustomerDto("a", "a", "a", "a"));
 
         private readonly Product _dbProduct = new()
-            {Customer = new Customer{Id = "a"}, Id = "a", Name = "a", DateOfReceipt = DateTime.Now};
+            {Customer = new Customer {Id = "a"}, Id = "a", Name = "a", DateOfReceipt = DateTime.Now};
 
         private readonly Mock<IProductRepository> _productRepository = new();
         private readonly Mock<ICustomerRepository> _customerRepository = new();
@@ -36,6 +38,7 @@ namespace Warehouse.Api.Products.Tests.Business
         private readonly Mock<IFileService> _fileService = new();
         private readonly Mock<IDistributedCache> _cache = new();
         private readonly Mock<IMapper> _mapper = new();
+        private readonly Mock<ISender> _sender = new();
 
         [OneTimeSetUp]
         public void SetUpOnce()
@@ -46,7 +49,7 @@ namespace Warehouse.Api.Products.Tests.Business
                 {AbsoluteExpiration = 1, SlidingExpiration = 1});
             _productService = new(_productRepository.Object, _cache.Object, _productOptions.Object,
                 _manufacturerOptions.Object, _customerRepository.Object, _mapper.Object, _manufacturerRepository.Object,
-                _fileService.Object);
+                _fileService.Object, _sender.Object);
         }
 
         [Test]
@@ -93,7 +96,7 @@ namespace Warehouse.Api.Products.Tests.Business
         {
             var product = ConfigureCreate();
 
-            var result = await _productService.CreateAsync(product);
+            var result = await _productService.CreateAsync(product, "a");
 
             Assert.That(result.Data, Is.EqualTo(_product));
         }
@@ -103,7 +106,7 @@ namespace Warehouse.Api.Products.Tests.Business
         {
             var product = ConfigureUpdate(_dbProduct, null);
 
-            var result = await _productService.UpdateAsync(_dbProduct.Id, product);
+            var result = await _productService.UpdateAsync(_dbProduct.Id, product, "a");
 
             Assert.That(result.Data, Is.EqualTo(_product));
         }
@@ -113,7 +116,7 @@ namespace Warehouse.Api.Products.Tests.Business
         {
             var product = ConfigureUpdate(null, _dbProduct);
 
-            var result = await _productService.UpdateAsync(_dbProduct.Id, product);
+            var result = await _productService.UpdateAsync(_dbProduct.Id, product, "a");
 
             Assert.That(result.Data, Is.EqualTo(_product));
         }
@@ -123,7 +126,8 @@ namespace Warehouse.Api.Products.Tests.Business
         {
             var product = ConfigureUpdate(null, null);
 
-            Assert.ThrowsAsync<Result<Product>>(async () => await _productService.UpdateAsync(_dbProduct.Id, product));
+            Assert.ThrowsAsync<Result<Product>>(async () =>
+                await _productService.UpdateAsync(_dbProduct.Id, product, "a"));
         }
 
         [Test]
@@ -139,24 +143,45 @@ namespace Warehouse.Api.Products.Tests.Business
         public async Task DeleteAsync_WhenCalledWithUnCachedProductAndExistingId_ReturnsNull()
         {
             ConfigureDelete(_dbProduct);
+
             var result = await _productService.DeleteAsync(_dbProduct.Id);
 
             Assert.That(result.Data, Is.EqualTo(null));
+        }
+
+        [Test]
+        public async Task GetPageAsync_WhenCalled_ReturnsPageDateDtoOfProductDto()
+        {
+            var expected = ConfigureGetPage();
+
+            var result = await _productService.GetPageAsync(1, 1);
+
+            Assert.That(result.Data, Is.EqualTo(expected));
+        }
+
+        [Test]
+        public async Task GetExportFileAsync_WhenCalled_ReturnsByteArray()
+        {
+            ConfigureGetFile();
+
+            var result = await _productService.GetExportFileAsync();
+
+            Assert.That(result.Data, Is.EqualTo(Array.Empty<byte>()));
         }
 
         private List<ProductDto> ConfigureGetAll()
         {
             List<ProductDto> products = new() {_product};
             List<Product> productsFromDb = new() {_dbProduct};
-            _productRepository.Setup(ur => ur.GetAllAsync()).ReturnsAsync(productsFromDb);
+            _productRepository.Setup(pr => pr.GetAllAsync()).ReturnsAsync(productsFromDb);
             _mapper.Setup(m => m.Map<List<ProductDto>>(productsFromDb)).Returns(products);
             return products;
         }
 
         private void ConfigureGet(Product dbProduct, Product fileProduct)
         {
-            _productRepository.Setup(ur => ur.GetAsync(_dbProduct.Id)).ReturnsAsync(dbProduct);
-            _fileService.Setup(ur => ur.ReadFromFileAsync<Product>(It.IsAny<string>(), It.IsAny<string>()))
+            _productRepository.Setup(pr => pr.GetAsync(_dbProduct.Id)).ReturnsAsync(dbProduct);
+            _fileService.Setup(fs => fs.ReadFromFileAsync<Product>(It.IsAny<string>(), It.IsAny<string>()))
                 .ReturnsAsync(fileProduct);
             _mapper.Setup(m => m.Map<ProductDto>(_dbProduct)).Returns(_product);
         }
@@ -166,7 +191,7 @@ namespace Warehouse.Api.Products.Tests.Business
             ProductModelDto product = new("a", DateTime.Now, new List<string> {"a"}, "a");
             _mapper.Setup(m => m.Map<ProductDto>(product)).Returns(_product);
             _mapper.Setup(m => m.Map<Product>(_product)).Returns(_dbProduct);
-            _manufacturerRepository.Setup(mr => mr.GetRangeAsync(It.IsAny<IEnumerable<string>>()))
+            _manufacturerRepository.Setup(ms => ms.GetRangeAsync(It.IsAny<IEnumerable<string>>()))
                 .ReturnsAsync(new List<Manufacturer> {new()});
             _customerRepository.Setup(cr => cr.GetAsync(_dbProduct.Customer.Id)).ReturnsAsync(_dbProduct.Customer);
             _mapper.Setup(m => m.Map<Product>(product)).Returns(_dbProduct);
@@ -178,8 +203,8 @@ namespace Warehouse.Api.Products.Tests.Business
         private ProductModelDto ConfigureUpdate(Product dbProduct, Product fileProduct)
         {
             ProductModelDto product = new("a", DateTime.Now, new List<string> {"a"}, "a");
-            _productRepository.Setup(ur => ur.GetAsync(_dbProduct.Id)).ReturnsAsync(dbProduct);
-            _fileService.Setup(ur => ur.ReadFromFileAsync<Product>(It.IsAny<string>(), It.IsAny<string>()))
+            _productRepository.Setup(pr => pr.GetAsync(_dbProduct.Id)).ReturnsAsync(dbProduct);
+            _fileService.Setup(fs => fs.ReadFromFileAsync<Product>(It.IsAny<string>(), It.IsAny<string>()))
                 .ReturnsAsync(fileProduct);
             _manufacturerRepository.Setup(mr => mr.GetRangeAsync(It.IsAny<IEnumerable<string>>()))
                 .ReturnsAsync(new List<Manufacturer> {new()});
@@ -193,7 +218,27 @@ namespace Warehouse.Api.Products.Tests.Business
 
         private void ConfigureDelete(Product product)
         {
-            _productRepository.Setup(ur => ur.GetAsync(_dbProduct.Id)).ReturnsAsync(product);
+            _productRepository.Setup(pr => pr.GetAsync(_dbProduct.Id)).ReturnsAsync(product);
+        }
+
+        private PageDataDto<ProductDto> ConfigureGetPage()
+        {
+            List<ProductDto> productDtos = new();
+            List<Product> products = new();
+            PageDataDto<ProductDto> expected = new(productDtos, 1);
+            _productRepository.Setup(pr => pr.GetPageAsync(1, 1))
+                .ReturnsAsync(products);
+            _productRepository.Setup(pr => pr.GetCountAsync())
+                .ReturnsAsync(1);
+            _mapper.Setup(m => m.Map<List<ProductDto>>(products)).Returns(productDtos);
+            return expected;
+        }
+
+        private void ConfigureGetFile()
+        {
+            ConfigureGetAll();
+            _mapper.Setup(m => m.Map<List<ExportProduct>>(new List<Product> {_dbProduct}))
+                .Returns(new List<ExportProduct>());
         }
     }
 }

@@ -8,7 +8,7 @@ import {ProfileService} from './services/auth/profile.service';
   styleUrls: ['./app.component.css']
 })
 export class AppComponent {
-  userName: string = this.profileService.decodeToken().UserName;
+  userName: string = this.profileService.decodeToken()?.UserName;
 
   constructor(private profileService: ProfileService) {
   }

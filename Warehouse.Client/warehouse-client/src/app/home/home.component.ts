@@ -9,23 +9,24 @@ import {JwtHelperService} from '@auth0/angular-jwt';
 import {ProductService} from '../services/data/product/product.service';
 import {AuthService} from '../services/auth/auth.service';
 import {AdminPanelComponent} from '../admin-panel/admin-panel.component';
+import {DataPanel} from '../abstract/data-panel';
+import {exportFile} from '../utils/util';
+import {LogService} from '../services/data/log/log.service';
+import {Log} from '../models/log';
 
 @Component({
   selector: 'home',
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.css']
 })
-export class HomeComponent extends AdminPanelComponent implements OnInit {
-
-  displayedColumns: string[] = ['name', 'dateOfReceipt', 'manufacturersName', 'customerName'];
+export class HomeComponent extends DataPanel implements OnInit {
 
   constructor(private productService: ProductService, public authService: AuthService, public dialog: MatDialog,
-              private jwtService: JwtHelperService) {
-    super(productService);
+              private jwtService: JwtHelperService, logService: LogService) {
+    super(productService, logService);
   }
 
-
-  ngOnInit() : Promise<any> {
+  async ngOnInit(): Promise<any> {
     super.ngOnInit();
     this.displayedColumns = ['name', 'dateOfReceipt', 'manufacturersName', 'customerName'];
     if (this.authService.isAdmin()) {
@@ -35,10 +36,15 @@ export class HomeComponent extends AdminPanelComponent implements OnInit {
   }
 
   openDialogForCreation() {
-    super.openDialogForCreation(this.dialog, ProductFormComponent);
+    super.openDialogForCreation(this.dialog, ProductFormComponent, 'product');
   }
 
   openDialogForEditing(product: Product) {
-    super.openDialogForEditing(product, this.dialog, ProductFormComponent);
+    super.openDialogForEditing(product, this.dialog, ProductFormComponent, 'product');
+  }
+
+  async export() {
+    let file = await this.productService.getFileForExport();
+    exportFile(file, 'products');
   }
 }

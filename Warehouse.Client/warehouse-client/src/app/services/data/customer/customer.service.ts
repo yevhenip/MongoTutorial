@@ -9,7 +9,6 @@ import { environment } from 'src/environments/environment';
 export class CustomerService extends DataService {
 
   constructor(http: HttpClient) {
-    super(http);
-    this.url = environment.customerApi;
+    super(http, environment.customerApi);
   }
 }

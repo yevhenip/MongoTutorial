@@ -66,13 +66,14 @@ namespace Warehouse.Api.Auth.Tests.Business
         public async Task RegisterAsync_WhenCalled_ReturnedResultOfUserDto()
         {
             RegisterDto register = new("a", "a", "a", "a", "a", "a");
-            var user = _user with {SessionId = null};
+            var user = _user with {SessionId = "a"};
             _mapper.Setup(m => m.Map<UserDto>(register)).Returns(user);
+            _mapper.Setup(m => m.Map<User>(user)).Returns(_userFromDb);
             _hasher.Setup(h => h.HashPassword(user, register.Password)).Returns("a");
 
             var result = await _authService.RegisterAsync(register);
 
-            Assert.That(result.Data.ToString(), Is.EqualTo(user.ToString()));
+            Assert.That(result.Data.User.ToString(), Is.EqualTo(user.ToString()));
         }
 
         [Test]

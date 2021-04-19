@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -37,8 +36,7 @@ namespace Warehouse.Api.Auth.Controllers.v1
         public async Task<IActionResult> RefreshToken(TokenDto token)
         {
             var sessionId = Guid.NewGuid().ToString();
-            var userId = User.Claims.SingleOrDefault(c => c.Type == "Id")?.Value;
-            var result = await _authService.RefreshTokenAsync(userId, token, sessionId);
+            var result = await _authService.RefreshTokenAsync(Id, token, sessionId);
             return Ok(result.Data);
         }
 
@@ -46,8 +44,7 @@ namespace Warehouse.Api.Auth.Controllers.v1
         [HttpPost("[action]")]
         public async Task Logout()
         {
-            var userId = User.Claims.SingleOrDefault(c => c.Type == "Id")?.Value;
-            await _authService.LogoutAsync(userId);
+            await _authService.LogoutAsync(Id);
         }
     }
 }

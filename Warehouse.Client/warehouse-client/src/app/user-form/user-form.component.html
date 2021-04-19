@@ -4,7 +4,7 @@
     <mat-form-field class="pb-3">
       <mat-label>Username</mat-label>
       <label>
-        <input matInput type="text" formControlName="userName" [errorStateMatcher]="matcher" [(ngModel)]="user.userName">
+        <input matInput type="text" formControlName="userName" [errorStateMatcher]="matcher">
       </label>
       <mat-error *ngIf="formControl.get('userName')?.hasError('required')">Username required</mat-error>
       <mat-error *ngIf="formControl.get('userName')?.hasError('minlength')">Minimum length is 5</mat-error>
@@ -13,7 +13,7 @@
     <mat-form-field class="pb-3">
       <mat-label>First name</mat-label>
       <label>
-        <input matInput type="text" formControlName="firstName" [errorStateMatcher]="matcher" [(ngModel)]="firstName">
+        <input matInput type="text" formControlName="firstName" [errorStateMatcher]="matcher">
       </label>
       <mat-error *ngIf="formControl.get('firstName')?.hasError('required')">Fullname required</mat-error>
       <mat-error *ngIf="formControl.get('firstName')?.hasError('minlength')">Minimum length is 5</mat-error>
@@ -22,7 +22,7 @@
     <mat-form-field class="pb-3">
       <mat-label>Last name</mat-label>
       <label>
-        <input matInput type="text" formControlName="lastName" [errorStateMatcher]="matcher" [(ngModel)]="lastName">
+        <input matInput type="text" formControlName="lastName" [errorStateMatcher]="matcher">
       </label>
       <mat-error *ngIf="formControl.get('lastName')?.hasError('minlength')">Minimum length is 5</mat-error>
     </mat-form-field>
@@ -30,7 +30,7 @@
     <mat-form-field class="pb-3">
       <mat-label>Email</mat-label>
       <label>
-        <input matInput type="email" formControlName="email" [errorStateMatcher]="matcher" [(ngModel)]="user.email">
+        <input matInput type="email" formControlName="email" [errorStateMatcher]="matcher">
       </label>
       <mat-error *ngIf="formControl.get('email')?.hasError('required')">Email required</mat-error>
       <mat-error *ngIf="formControl.get('email')?.hasError('email')">Email is incorrect</mat-error>
@@ -39,7 +39,7 @@
     <mat-form-field class="pb-3">
       <mat-label>Phone</mat-label>
       <label>
-        <input matInput type="text" formControlName="phone" [errorStateMatcher]="matcher" [(ngModel)]="user.phone">
+        <input matInput type="text" formControlName="phone" [errorStateMatcher]="matcher">
       </label>
       <mat-error *ngIf="formControl.get('phone')?.hasError('required')">Phone required</mat-error>
       <mat-error *ngIf="formControl.get('phone')?.hasError('pattern')">Phone is incorrect</mat-error>

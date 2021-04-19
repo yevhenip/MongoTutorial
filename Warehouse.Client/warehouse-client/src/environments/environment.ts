@@ -4,11 +4,12 @@
 
 export const environment = {
   production: false,
-  productApi: 'http://localhost:4000/api/v1/products/',
+  authApi: 'http://localhost:1000/api/v1/auth/',
   customerApi: 'http://localhost:2000/api/v1/customers/',
+  productApi: 'http://localhost:4000/api/v1/products/',
   manufacturerApi: 'http://localhost:3000/api/v1/manufacturers/',
   userApi: 'http://localhost:7000/api/v1/users/',
-  authApi: 'http://localhost:1000/api/v1/auth/'
+  logApi: 'http://localhost:8000/api/v1/logs/'
 };
 
 /*

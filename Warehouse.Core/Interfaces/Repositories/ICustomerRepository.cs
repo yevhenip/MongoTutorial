@@ -7,6 +7,10 @@ namespace Warehouse.Core.Interfaces.Repositories
     public interface ICustomerRepository
     {
         Task<List<Customer>> GetAllAsync();
+        
+        public Task<List<Customer>> GetPageAsync(int page, int pageSize);
+
+        public Task<long> GetCountAsync();
 
         Task<Customer> GetAsync(string id);
 
