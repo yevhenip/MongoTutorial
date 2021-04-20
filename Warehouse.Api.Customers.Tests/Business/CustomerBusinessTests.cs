@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 using AutoMapper;
+using EasyNetQ;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Options;
 using Moq;
@@ -9,7 +10,6 @@ using Warehouse.Api.Customers.Business;
 using Warehouse.Core.Common;
 using Warehouse.Core.DTO;
 using Warehouse.Core.DTO.Customer;
-using Warehouse.Core.Interfaces.Messaging.Sender;
 using Warehouse.Core.Interfaces.Repositories;
 using Warehouse.Core.Interfaces.Services;
 using Warehouse.Core.Settings.CacheSettings;
@@ -29,7 +29,7 @@ namespace Warehouse.Api.Customers.Tests.Business
         private readonly Mock<IFileService> _fileService = new();
         private readonly Mock<IDistributedCache> _cache = new();
         private readonly Mock<IMapper> _mapper = new();
-        private readonly Mock<ISender> _sender = new();
+        private readonly Mock<IBus> _bus = new();
 
         [OneTimeSetUp]
         public void SetUpOnce()
@@ -37,7 +37,7 @@ namespace Warehouse.Api.Customers.Tests.Business
             _options.Setup(opt => opt.Value).Returns(new CacheCustomerSettings
                 {AbsoluteExpiration = 1, SlidingExpiration = 1});
             _customerService = new(_options.Object, _customerRepository.Object, _cache.Object, _mapper.Object,
-                _sender.Object, _fileService.Object);
+                _bus.Object, _fileService.Object);
         }
 
         [Test]

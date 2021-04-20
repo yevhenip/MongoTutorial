@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Text.Json;
 using System.Threading.Tasks;
 using AutoMapper;
+using EasyNetQ;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Options;
 using Warehouse.Api.Business;
@@ -12,11 +12,11 @@ using Warehouse.Core.Common;
 using Warehouse.Core.DTO;
 using Warehouse.Core.DTO.Log;
 using Warehouse.Core.DTO.Manufacturer;
-using Warehouse.Core.Interfaces.Messaging.Sender;
 using Warehouse.Core.Interfaces.Repositories;
 using Warehouse.Core.Interfaces.Services;
 using Warehouse.Core.Settings.CacheSettings;
 using Warehouse.Domain;
+using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace Warehouse.Api.Manufacturers.Business
 {
@@ -28,7 +28,7 @@ namespace Warehouse.Api.Manufacturers.Business
 
         public ManufacturerService(IOptions<CacheManufacturerSettings> manufacturerSettings,
             IManufacturerRepository manufacturerRepository, IDistributedCache distributedCache, IMapper mapper,
-            ISender sender, IFileService fileService) : base(mapper, distributedCache, sender, fileService)
+            IBus bus, IFileService fileService) : base(mapper, distributedCache, bus, fileService)
         {
             _manufacturerSettings = manufacturerSettings.Value;
             _manufacturerRepository = manufacturerRepository;
@@ -105,8 +105,8 @@ namespace Warehouse.Api.Manufacturers.Business
             await FileService.WriteToFileAsync(manufacturerToDb, _path, cacheKey);
 
             await _manufacturerRepository.CreateAsync(manufacturerToDb);
-            await Sender.SendMessage(manufacturerToDb, Queues.CreateManufacturerQueue);
-            await Sender.SendMessage(log, Queues.CreateLog);
+            await Bus.PubSub.PublishAsync(manufacturerToDb);
+            await Bus.PubSub.PublishAsync(log);
             return Result<ManufacturerDto>.Success(manufacturerDto);
         }
 
@@ -130,8 +130,8 @@ namespace Warehouse.Api.Manufacturers.Business
                     JsonSerializerOptions), DateTime.UtcNow);
 
             await _manufacturerRepository.UpdateAsync(manufacturerInDb);
-            await Sender.SendMessage(manufacturerDto, Queues.UpdateManufacturerQueue);
-            await Sender.SendMessage(log, Queues.CreateLog);
+            await Bus.PubSub.PublishAsync(manufacturerInDb);
+            await Bus.PubSub.PublishAsync(log);
             await DistributedCache.UpdateAsync(cacheKey, manufacturerInDb);
             await _manufacturerRepository.UpdateAsync(manufacturerInDb);
             await FileService.WriteToFileAsync(manufacturerInDb, _path, cacheKey);
@@ -148,7 +148,7 @@ namespace Warehouse.Api.Manufacturers.Business
                 CheckForNull(manufacturerInDb);
             }
 
-            await Sender.SendMessage(id, Queues.DeleteManufacturerQueue);
+            await Bus.PubSub.PublishAsync(id);
             await _manufacturerRepository.DeleteAsync(id);
             await FileService.DeleteFileAsync(_path, cacheKey);
 

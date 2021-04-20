@@ -4,9 +4,9 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text;
-using System.Text.Json;
 using System.Threading.Tasks;
 using AutoMapper;
+using EasyNetQ;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Options;
 using Warehouse.Api.Business;
@@ -15,11 +15,11 @@ using Warehouse.Core.Common;
 using Warehouse.Core.DTO;
 using Warehouse.Core.DTO.Log;
 using Warehouse.Core.DTO.Product;
-using Warehouse.Core.Interfaces.Messaging.Sender;
 using Warehouse.Core.Interfaces.Repositories;
 using Warehouse.Core.Interfaces.Services;
 using Warehouse.Core.Settings.CacheSettings;
 using Warehouse.Domain;
+using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace Warehouse.Api.Products.Business
 {
@@ -35,7 +35,7 @@ namespace Warehouse.Api.Products.Business
         public ProductService(IProductRepository productRepository, IDistributedCache distributedCache,
             IOptions<CacheProductSettings> productSettings, IOptions<CacheManufacturerSettings> manufacturerSettings,
             ICustomerRepository customerRepository, IMapper mapper, IManufacturerRepository manufacturerRepository,
-            IFileService fileService, ISender sender) : base(mapper, distributedCache, sender, fileService)
+            IFileService fileService, IBus bus) : base(mapper, distributedCache, bus, fileService)
         {
             _manufacturerSettings = manufacturerSettings.Value;
             _manufacturerRepository = manufacturerRepository;
@@ -121,7 +121,7 @@ namespace Warehouse.Api.Products.Business
                 new(Guid.NewGuid().ToString(), userName, "added product", JsonSerializer.Serialize(result,
                     JsonSerializerOptions), DateTime.UtcNow);
 
-            await Sender.SendMessage(log, Queues.CreateLog);
+            await Bus.PubSub.PublishAsync(log);
             await _productRepository.CreateAsync(productToDb);
             return Result<ProductDto>.Success(result);
         }
@@ -147,7 +147,7 @@ namespace Warehouse.Api.Products.Business
 
             await DistributedCache.SetCacheAsync(cacheKey, productInDb, _productSettings);
             await FileService.WriteToFileAsync(productInDb, _path, cacheKey);
-            await Sender.SendMessage(log, Queues.CreateLog);
+            await Bus.PubSub.PublishAsync(log);
             await _productRepository.UpdateAsync(productInDb);
             return Result<ProductDto>.Success(result);
         }

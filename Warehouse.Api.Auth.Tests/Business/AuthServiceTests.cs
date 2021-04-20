@@ -5,6 +5,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Threading.Tasks;
 using AutoMapper;
+using EasyNetQ;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Options;
@@ -14,7 +15,6 @@ using Warehouse.Api.Auth.Business;
 using Warehouse.Core.Common;
 using Warehouse.Core.DTO.Auth;
 using Warehouse.Core.DTO.Users;
-using Warehouse.Core.Interfaces.Messaging.Sender;
 using Warehouse.Core.Interfaces.Repositories;
 using Warehouse.Core.Interfaces.Services;
 using Warehouse.Core.Settings;
@@ -45,7 +45,7 @@ namespace Warehouse.Api.Auth.Tests.Business
         public void SetUpOnce()
         {
             Mock<IDistributedCache> cache = new();
-            Mock<ISender> sender = new();
+            Mock<IBus> bus = new();
             _options.Setup(opt => opt.Value).Returns(new JwtTokenConfiguration
             {
                 Audience = "Test", Issuer = "Test", Secret = ":-)TestTestTestTestTestTestTestTest(-:",
@@ -53,7 +53,7 @@ namespace Warehouse.Api.Auth.Tests.Business
             });
 
             _authService = new AuthService(_options.Object, _tokenRepository.Object, cache.Object, _mapper.Object,
-                _userRepository.Object, sender.Object, _hasher.Object);
+                _userRepository.Object, bus.Object, _hasher.Object);
         }
 
         [SetUp]

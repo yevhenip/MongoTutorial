@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text.Json;
 using System.Threading.Tasks;
 using AutoMapper;
+using EasyNetQ;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Options;
 using Moq;
@@ -11,11 +11,11 @@ using Warehouse.Api.Users.Business;
 using Warehouse.Core.Common;
 using Warehouse.Core.DTO;
 using Warehouse.Core.DTO.Users;
-using Warehouse.Core.Interfaces.Messaging.Sender;
 using Warehouse.Core.Interfaces.Repositories;
 using Warehouse.Core.Interfaces.Services;
 using Warehouse.Core.Settings.CacheSettings;
 using Warehouse.Domain;
+using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace Warehouse.Api.Users.Tests.Business
 {
@@ -36,7 +36,7 @@ namespace Warehouse.Api.Users.Tests.Business
         private readonly Mock<IFileService> _fileService = new();
         private readonly Mock<IDistributedCache> _cache = new();
         private readonly Mock<IMapper> _mapper = new();
-        private readonly Mock<ISender> _sender = new();
+        private readonly Mock<IBus> _bus = new();
 
         private UserService _userService;
 
@@ -46,7 +46,7 @@ namespace Warehouse.Api.Users.Tests.Business
             _options.Setup(opt => opt.Value).Returns(new CacheUserSettings
                 {AbsoluteExpiration = 1, SlidingExpiration = 1});
             _userService = new(_refreshTokenRepository.Object, _userRepository.Object, _options.Object,
-                _cache.Object, _mapper.Object, _fileService.Object, _sender.Object);
+                _cache.Object, _mapper.Object, _fileService.Object, _bus.Object);
         }
 
         [SetUp]
@@ -184,7 +184,7 @@ namespace Warehouse.Api.Users.Tests.Business
 
             Assert.That(result.Data, Is.EqualTo(users));
         }
-        
+
         [Test]
         public async Task GetPageAsync_WhenCalled_ReturnsPageDateDtoOfUserDto()
         {
@@ -246,7 +246,7 @@ namespace Warehouse.Api.Users.Tests.Business
                     DateExpires = new DateTime(2222, 2, 2)
                 });
         }
-        
+
         private PageDataDto<UserDto> ConfigureGetPage()
         {
             List<UserDto> userDtos = new();

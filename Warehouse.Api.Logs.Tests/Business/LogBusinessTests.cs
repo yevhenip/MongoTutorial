@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using AutoMapper;
+using EasyNetQ;
 using Moq;
 using NUnit.Framework;
 using Warehouse.Api.Logs.Business;
@@ -24,11 +25,12 @@ namespace Warehouse.Api.Logs.Tests.Business
 
         private readonly Mock<ILogRepository> _logRepository = new();
         private readonly Mock<IMapper> _mapper = new();
+        private readonly Mock<IBus> _bus = new();
 
         [OneTimeSetUp]
         public void SetUpOnce()
         {
-            _logService = new(_logRepository.Object, _mapper.Object);
+            _logService = new(_logRepository.Object, _mapper.Object, _bus.Object);
         }
 
         [Test]

@@ -8,16 +8,15 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using AutoMapper;
+using EasyNetQ;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Warehouse.Api.Business;
-using Warehouse.Api.Extensions;
 using Warehouse.Core.Common;
 using Warehouse.Core.DTO.Auth;
 using Warehouse.Core.DTO.Users;
-using Warehouse.Core.Interfaces.Messaging.Sender;
 using Warehouse.Core.Interfaces.Repositories;
 using Warehouse.Core.Interfaces.Services;
 using Warehouse.Core.Settings;
@@ -33,8 +32,8 @@ namespace Warehouse.Api.Auth.Business
         private readonly IPasswordHasher<UserDto> _hasher;
 
         public AuthService(IOptions<JwtTokenConfiguration> tokenConfiguration, IRefreshTokenRepository tokenRepository,
-            IDistributedCache distributedCache, IMapper mapper, IUserRepository userRepository, ISender sender,
-            IPasswordHasher<UserDto> hasher) : base(mapper, distributedCache, sender)
+            IDistributedCache distributedCache, IMapper mapper, IUserRepository userRepository, IBus bus,
+            IPasswordHasher<UserDto> hasher) : base(mapper, distributedCache, bus)
         {
             _tokenConfiguration = tokenConfiguration.Value;
             _userRepository = userRepository;
@@ -61,7 +60,7 @@ namespace Warehouse.Api.Auth.Business
             };
 
             await _tokenRepository.CreateAsync(refreshToken);
-            await Sender.SendMessage(userToDb, Queues.CreateUserQueue);
+            await Bus.PubSub.PublishAsync(userToDb);
             UserAuthenticatedDto authenticatedDto = new(user, jwtToken, refreshToken.Token);
             return Result<UserAuthenticatedDto>.Success(authenticatedDto);
         }
@@ -79,7 +78,7 @@ namespace Warehouse.Api.Auth.Business
 
             IsValid(userDto, login.Password);
 
-            await Sender.SendMessage(user, Queues.UpdateUserQueue);
+            await Bus.PubSub.PublishAsync(user);
 
             var jwtToken = GenerateJwtToken(userDto);
             var tokenString = GenerateRefreshToken();
@@ -109,7 +108,7 @@ namespace Warehouse.Api.Auth.Business
             CheckForNull(refreshTokenInDb);
             IsValid(refreshTokenInDb);
 
-            await Sender.SendMessage(user, Queues.UpdateUserQueue);
+            await Bus.PubSub.PublishAsync(user);
 
             var jwtToken = GenerateJwtToken(userDto);
             var tokenString = GenerateRefreshToken();
@@ -138,7 +137,7 @@ namespace Warehouse.Api.Auth.Business
             }
 
             user.SessionId = null;
-            await Sender.SendMessage(user, Queues.UpdateUserQueue);
+            await Bus.PubSub.PublishAsync(user);
             return Result<object>.Success();
         }
 

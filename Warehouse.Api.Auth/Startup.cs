@@ -18,8 +18,8 @@ namespace Warehouse.Api.Auth
         public override void ConfigureServices(IServiceCollection services)
         {
             base.ConfigureServices(services);
-            services.AddSingleton<IRefreshTokenRepository, RefreshTokenRepository>();
             services.AddSingleton<IPasswordHasher<UserDto>>(new PasswordHasher<UserDto>());
+            services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
             services.AddScoped<IAuthService, AuthService>();
         }
     }

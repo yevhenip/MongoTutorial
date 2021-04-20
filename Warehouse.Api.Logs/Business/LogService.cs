@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 using AutoMapper;
+using EasyNetQ;
 using Warehouse.Api.Business;
 using Warehouse.Core.Common;
 using Warehouse.Core.DTO.Log;
@@ -14,7 +15,7 @@ namespace Warehouse.Api.Logs.Business
     {
         private readonly ILogRepository _logRepository;
 
-        public LogService(ILogRepository logRepository, IMapper mapper) : base(mapper)
+        public LogService(ILogRepository logRepository, IMapper mapper, IBus bus) : base(mapper, null, bus)
         {
             _logRepository = logRepository;
         }

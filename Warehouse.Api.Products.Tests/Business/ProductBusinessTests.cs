@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using AutoMapper;
+using EasyNetQ;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Options;
 using Moq;
@@ -11,7 +12,6 @@ using Warehouse.Core.Common;
 using Warehouse.Core.DTO;
 using Warehouse.Core.DTO.Customer;
 using Warehouse.Core.DTO.Product;
-using Warehouse.Core.Interfaces.Messaging.Sender;
 using Warehouse.Core.Interfaces.Repositories;
 using Warehouse.Core.Interfaces.Services;
 using Warehouse.Core.Settings.CacheSettings;
@@ -38,7 +38,7 @@ namespace Warehouse.Api.Products.Tests.Business
         private readonly Mock<IFileService> _fileService = new();
         private readonly Mock<IDistributedCache> _cache = new();
         private readonly Mock<IMapper> _mapper = new();
-        private readonly Mock<ISender> _sender = new();
+        private readonly Mock<IBus> _bus = new();
 
         [OneTimeSetUp]
         public void SetUpOnce()
@@ -49,7 +49,7 @@ namespace Warehouse.Api.Products.Tests.Business
                 {AbsoluteExpiration = 1, SlidingExpiration = 1});
             _productService = new(_productRepository.Object, _cache.Object, _productOptions.Object,
                 _manufacturerOptions.Object, _customerRepository.Object, _mapper.Object, _manufacturerRepository.Object,
-                _fileService.Object, _sender.Object);
+                _fileService.Object, _bus.Object);
         }
 
         [Test]

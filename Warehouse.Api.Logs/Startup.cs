@@ -1,8 +1,8 @@
+using System.Reflection;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Warehouse.Api.Logs.Business;
 using Warehouse.Api.Logs.Data;
-using Warehouse.Api.Logs.Messaging.Receiver;
 using Warehouse.Core.Interfaces.Repositories;
 using Warehouse.Core.Interfaces.Services;
 
@@ -13,12 +13,18 @@ namespace Warehouse.Api.Logs
         public Startup(IWebHostEnvironment environment) : base(environment)
         {
         }
+
         public override void ConfigureServices(IServiceCollection services)
         {
             base.ConfigureServices(services);
-            services.AddSingleton<ILogRepository, LogRepository>();
-            services.AddSingleton<ILogService, LogService>();
-            services.AddHostedService<CreateLogReceiver>();
+            services.AddScoped<ILogRepository, LogRepository>();
+            services.AddScoped<ILogService, LogService>();
+            services.AddScoped<CreatedLogHandler>();
+        }
+
+        protected override Assembly GetEventHandlerAssemblies()
+        {
+            return typeof(Startup).Assembly;
         }
     }
 }

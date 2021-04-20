@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Text.Json;
 using System.Threading.Tasks;
 using AutoMapper;
+using EasyNetQ;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Options;
 using Warehouse.Api.Business;
@@ -12,11 +12,11 @@ using Warehouse.Core.Common;
 using Warehouse.Core.DTO;
 using Warehouse.Core.DTO.Customer;
 using Warehouse.Core.DTO.Log;
-using Warehouse.Core.Interfaces.Messaging.Sender;
 using Warehouse.Core.Interfaces.Repositories;
 using Warehouse.Core.Interfaces.Services;
 using Warehouse.Core.Settings.CacheSettings;
 using Warehouse.Domain;
+using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace Warehouse.Api.Customers.Business
 {
@@ -27,8 +27,8 @@ namespace Warehouse.Api.Customers.Business
         private readonly ICustomerRepository _customerRepository;
 
         public CustomerService(IOptions<CacheCustomerSettings> customerSettings, ICustomerRepository customerRepository,
-            IDistributedCache distributedCache, IMapper mapper, ISender sender, IFileService fileService) :
-            base(mapper, distributedCache, sender, fileService)
+            IDistributedCache distributedCache, IMapper mapper, IBus bus, IFileService fileService) :
+            base(mapper, distributedCache, bus, fileService)
         {
             _customerSettings = customerSettings.Value;
             _customerRepository = customerRepository;
@@ -92,7 +92,7 @@ namespace Warehouse.Api.Customers.Business
                 CheckForNull(customerInDb);
             }
 
-            await Sender.SendMessage(id, Queues.DeleteCustomerQueue);
+            await Bus.PubSub.PublishAsync(id);
             await DistributedCache.RemoveAsync(cacheKey);
             await FileService.DeleteFileAsync(_path, cacheKey);
             await _customerRepository.DeleteAsync(id);
@@ -113,8 +113,8 @@ namespace Warehouse.Api.Customers.Business
             await FileService.WriteToFileAsync(customerToDb, _path, cacheKey);
 
             await _customerRepository.CreateAsync(customerToDb);
-            await Sender.SendMessage(customerToDb, Queues.CreateCustomerQueue);
-            await Sender.SendMessage(log, Queues.CreateLog);
+            await Bus.PubSub.PublishAsync(customerToDb);
+            await Bus.PubSub.PublishAsync(log);
             return Result<CustomerDto>.Success(customer with {Id = customerToDb.Id});
         }
     }

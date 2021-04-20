@@ -1,5 +1,7 @@
 using System.IO;
+using System.Reflection;
 using System.Text.Json;
+using EasyNetQ;
 using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -7,13 +9,12 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using MongoDB.Driver;
-using RabbitMQ.Client;
 using Warehouse.Api.Business;
 using Warehouse.Api.Extensions;
 using Warehouse.Api.Common;
+using Warehouse.Api.Common.EventBus;
 using Warehouse.Api.Data;
-using Warehouse.Api.Messaging.Sender;
-using Warehouse.Core.Interfaces.Messaging.Sender;
+using Warehouse.Api.Settings;
 using Warehouse.Core.Interfaces.Repositories;
 using Warehouse.Core.Interfaces.Services;
 using Warehouse.Core.MapperProfile.ProductProfile;
@@ -63,16 +64,8 @@ namespace Warehouse.Api
             services.AddSingleton<IMongoClient, MongoClient>(_ =>
                 new MongoClient(Configuration["Data:ConnectionString"]));
             services.AddScoped<ValidateTokenSessionId>();
-            services.AddSingleton<ISender, Sender>();
-            services.AddSingleton<IFileService, FileService>();
-            services.AddSingleton<IUserRepository, UserRepository>();
-
-            services.AddSingleton(_ => new ConnectionFactory
-            {
-                HostName = Configuration["RabbitMq:HostName"],
-                UserName = Configuration["RabbitMq:UserName"],
-                Password = Configuration["RabbitMq:Password"]
-            }.CreateConnection());
+            services.AddScoped<IFileService, FileService>();
+            services.AddScoped<IUserRepository, UserRepository>();
 
             services.Configure<CacheProductSettings>(Configuration.GetSection("Cache:CacheOptions:Product"));
             services.Configure<CacheManufacturerSettings>(Configuration.GetSection("Cache:CacheOptions:Manufacturer"));
@@ -80,13 +73,23 @@ namespace Warehouse.Api
             services.Configure<CacheCustomerSettings>(Configuration.GetSection("Cache:CacheOptions:Customer"));
 
             services.AddJwtBearerAuthentication(Configuration);
-            
-            services.AddCors(cors => cors.AddPolicy(DefaultCors,b =>
+
+            services.AddCors(cors => cors.AddPolicy(DefaultCors, b =>
             {
                 b.AllowAnyOrigin();
                 b.AllowAnyHeader();
                 b.AllowAnyMethod();
             }));
+
+            services.Configure<EventSubscriptionSettings>(settings =>
+                settings.EventHandlersAssemblies = GetEventHandlerAssemblies());
+            services.AddSingleton(_ => RabbitHutch.CreateBus(Configuration["RabbitMq:ConnectionString"]));
+            services.AddHostedService<EventBusInitializationBackgroundService>();
+        }
+
+        protected virtual Assembly GetEventHandlerAssemblies()
+        {
+            return null;
         }
 
         public virtual void Configure(IApplicationBuilder app, IWebHostEnvironment env)

@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
-using System.Text.Json;
 using System.Threading.Tasks;
 using AutoMapper;
+using EasyNetQ;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Options;
 using Warehouse.Api.Business;
@@ -14,11 +14,11 @@ using Warehouse.Core.Common;
 using Warehouse.Core.DTO;
 using Warehouse.Core.DTO.Log;
 using Warehouse.Core.DTO.Users;
-using Warehouse.Core.Interfaces.Messaging.Sender;
 using Warehouse.Core.Interfaces.Repositories;
 using Warehouse.Core.Interfaces.Services;
 using Warehouse.Core.Settings.CacheSettings;
 using Warehouse.Domain;
+using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace Warehouse.Api.Users.Business
 {
@@ -31,7 +31,7 @@ namespace Warehouse.Api.Users.Business
 
         public UserService(IRefreshTokenRepository tokenRepository, IUserRepository userRepository,
             IOptions<CacheUserSettings> userSettings, IDistributedCache distributedCache, IMapper mapper,
-            IFileService fileService, ISender sender) : base(mapper, distributedCache, sender, fileService)
+            IFileService fileService, IBus bus) : base(mapper, distributedCache, bus, fileService)
         {
             _userSettings = userSettings.Value;
             _tokenRepository = tokenRepository;
@@ -137,7 +137,7 @@ namespace Warehouse.Api.Users.Business
             await _userRepository.UpdateAsync(userInDb);
             await DistributedCache.UpdateAsync(cacheKey, userInDb);
             await FileService.WriteToFileAsync(userInDb, _path, cacheKey);
-            await Sender.SendMessage(log, Queues.CreateLog);
+            await Bus.PubSub.PublishAsync(log);
 
             return Result<UserDto>.Success(userDto);
         }
