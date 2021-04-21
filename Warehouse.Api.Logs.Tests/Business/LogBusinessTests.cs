@@ -61,7 +61,7 @@ namespace Warehouse.Api.Logs.Tests.Business
             Assert.ThrowsAsync<Result<Log>>(
                 async () => await _logService.GetAsync(_dbLog.Id));
         }
-        
+
         [Test]
         public async Task GetActualAsync_WhenCalled_ReturnsLog()
         {
@@ -86,15 +86,16 @@ namespace Warehouse.Api.Logs.Tests.Business
         {
             List<LogDto> logs = new() {_log};
             List<Log> logsFromDb = new() {_dbLog};
-            _logRepository.Setup(cr => cr.GetAllAsync()).ReturnsAsync(logsFromDb);
-            _logRepository.Setup(cr => cr.GetActualAsync()).ReturnsAsync(logsFromDb);
+            _logRepository.Setup(cr => cr.GetRangeAsync(_ => true)).ReturnsAsync(logsFromDb);
+            _logRepository.Setup(cr => cr.GetRangeAsync(l => l.ActionDate >= DateTime.UtcNow.AddDays(-1)))
+                .ReturnsAsync(logsFromDb);
             _mapper.Setup(m => m.Map<List<LogDto>>(logsFromDb)).Returns(logs);
             return logs;
         }
-        
+
         private void ConfigureGet(Log dbLog)
         {
-            _logRepository.Setup(cr => cr.GetAsync(_dbLog.Id)).ReturnsAsync(dbLog);
+            _logRepository.Setup(cr => cr.GetAsync(l => l.Id == _dbLog.Id)).ReturnsAsync(dbLog);
             _mapper.Setup(m => m.Map<LogDto>(_dbLog)).Returns(_log);
         }
 

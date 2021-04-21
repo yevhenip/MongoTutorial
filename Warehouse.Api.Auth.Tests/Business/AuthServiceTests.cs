@@ -81,7 +81,7 @@ namespace Warehouse.Api.Auth.Tests.Business
         {
             var login = ConfigureLoginTests(PasswordVerificationResult.Success, _userFromDb);
 
-            var result = await _authService.LoginAsync(login, _user.SessionId);
+            var result = await _authService.LoginAsync(login);
 
             Assertion(result);
         }
@@ -92,7 +92,7 @@ namespace Warehouse.Api.Auth.Tests.Business
             var login = ConfigureLoginTests(PasswordVerificationResult.Failed, _userFromDb);
 
             Assert.ThrowsAsync<Result<UserAuthenticatedDto>>(async () =>
-                await _authService.LoginAsync(login, _user.SessionId));
+                await _authService.LoginAsync(login));
         }
 
         [Test]
@@ -101,7 +101,7 @@ namespace Warehouse.Api.Auth.Tests.Business
             var login = ConfigureLoginTests(PasswordVerificationResult.Failed, null);
 
             Assert.ThrowsAsync<Result<User>>(async () =>
-                await _authService.LoginAsync(login, _user.SessionId));
+                await _authService.LoginAsync(login));
         }
 
         [Test]
@@ -109,7 +109,7 @@ namespace Warehouse.Api.Auth.Tests.Business
         {
             var token = ConfigureRefreshTokenTests(2222);
 
-            var result = await _authService.RefreshTokenAsync(_user.Id, token, _user.SessionId);
+            var result = await _authService.RefreshTokenAsync(_user.Id, token);
 
             Assertion(result);
         }
@@ -120,7 +120,7 @@ namespace Warehouse.Api.Auth.Tests.Business
             var token = ConfigureRefreshTokenTests(1);
 
             Assert.ThrowsAsync<Result<RefreshToken>>(async () =>
-                await _authService.RefreshTokenAsync(_user.Id, token, _user.SessionId));
+                await _authService.RefreshTokenAsync(_user.Id, token));
         }
 
         [Test]
@@ -146,7 +146,7 @@ namespace Warehouse.Api.Auth.Tests.Business
         {
             LoginDto login = new("a", "a");
 
-            _userRepository.Setup(ur => ur.GetByUserNameAsync(_user.UserName)).ReturnsAsync(user);
+            _userRepository.Setup(ur => ur.GetAsync(u => u.UserName == _user.UserName)).ReturnsAsync(user);
             _mapper.Setup(m => m.Map<UserDto>(_userFromDb)).Returns(_user);
             _hasher.Setup(h => h.VerifyHashedPassword(_user, _user.PasswordHash, login.Password))
                 .Returns(result);
@@ -158,15 +158,16 @@ namespace Warehouse.Api.Auth.Tests.Business
         {
             TokenDto token = new("a");
 
-            _userRepository.Setup(ur => ur.GetAsync(_user.UserName)).ReturnsAsync(_userFromDb);
-            _tokenRepository.Setup(tr => tr.GetAsync(_user.Id, token.Name)).ReturnsAsync(new RefreshToken
-            {
-                Token = token.Name,
-                DateCreated = new DateTime(1, 1, 1),
-                User = _userFromDb,
-                Id = "a",
-                DateExpires = new DateTime(year, 1, 1)
-            });
+            _userRepository.Setup(ur => ur.GetAsync(u => u.UserName == _user.UserName)).ReturnsAsync(_userFromDb);
+            _tokenRepository.Setup(tr => tr.GetAsync(t => t.User.Id == _user.Id && t.Token == token.Name)).ReturnsAsync(
+                new RefreshToken
+                {
+                    Token = token.Name,
+                    DateCreated = new DateTime(1, 1, 1),
+                    User = _userFromDb,
+                    Id = "a",
+                    DateExpires = new DateTime(year, 1, 1)
+                });
 
             return token;
         }
@@ -174,7 +175,7 @@ namespace Warehouse.Api.Auth.Tests.Business
         private string ConfigureLogoutTests(User user)
         {
             const string id = "a";
-            _userRepository.Setup(ur => ur.GetAsync(id)).ReturnsAsync(user);
+            _userRepository.Setup(ur => ur.GetAsync(u => u.Id == id)).ReturnsAsync(user);
             return id;
         }
 

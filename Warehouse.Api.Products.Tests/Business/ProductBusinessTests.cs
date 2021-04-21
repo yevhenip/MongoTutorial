@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using AutoMapper;
 using EasyNetQ;
@@ -173,14 +174,14 @@ namespace Warehouse.Api.Products.Tests.Business
         {
             List<ProductDto> products = new() {_product};
             List<Product> productsFromDb = new() {_dbProduct};
-            _productRepository.Setup(pr => pr.GetAllAsync()).ReturnsAsync(productsFromDb);
+            _productRepository.Setup(pr => pr.GetRangeAsync(_ => true)).ReturnsAsync(productsFromDb);
             _mapper.Setup(m => m.Map<List<ProductDto>>(productsFromDb)).Returns(products);
             return products;
         }
 
         private void ConfigureGet(Product dbProduct, Product fileProduct)
         {
-            _productRepository.Setup(pr => pr.GetAsync(_dbProduct.Id)).ReturnsAsync(dbProduct);
+            _productRepository.Setup(pr => pr.GetAsync(p => p.Id == _dbProduct.Id)).ReturnsAsync(dbProduct);
             _fileService.Setup(fs => fs.ReadFromFileAsync<Product>(It.IsAny<string>(), It.IsAny<string>()))
                 .ReturnsAsync(fileProduct);
             _mapper.Setup(m => m.Map<ProductDto>(_dbProduct)).Returns(_product);
@@ -191,9 +192,10 @@ namespace Warehouse.Api.Products.Tests.Business
             ProductModelDto product = new("a", DateTime.Now, new List<string> {"a"}, "a");
             _mapper.Setup(m => m.Map<ProductDto>(product)).Returns(_product);
             _mapper.Setup(m => m.Map<Product>(_product)).Returns(_dbProduct);
-            _manufacturerRepository.Setup(ms => ms.GetRangeAsync(It.IsAny<IEnumerable<string>>()))
+            _manufacturerRepository.Setup(ms => ms.GetRangeAsync(m => It.IsAny<IEnumerable<string>>().Contains(m.Id)))
                 .ReturnsAsync(new List<Manufacturer> {new()});
-            _customerRepository.Setup(cr => cr.GetAsync(_dbProduct.Customer.Id)).ReturnsAsync(_dbProduct.Customer);
+            _customerRepository.Setup(cr => cr.GetAsync(c => c.Id == _dbProduct.Customer.Id))
+                .ReturnsAsync(_dbProduct.Customer);
             _mapper.Setup(m => m.Map<Product>(product)).Returns(_dbProduct);
             _mapper.Setup(m => m.Map<ProductDto>(_dbProduct)).Returns(_product);
             _mapper.Setup(m => m.Map<Customer>(_dbProduct.Customer)).Returns(_dbProduct.Customer);
@@ -203,12 +205,13 @@ namespace Warehouse.Api.Products.Tests.Business
         private ProductModelDto ConfigureUpdate(Product dbProduct, Product fileProduct)
         {
             ProductModelDto product = new("a", DateTime.Now, new List<string> {"a"}, "a");
-            _productRepository.Setup(pr => pr.GetAsync(_dbProduct.Id)).ReturnsAsync(dbProduct);
+            _productRepository.Setup(pr => pr.GetAsync(p => p.Id == _dbProduct.Id)).ReturnsAsync(dbProduct);
             _fileService.Setup(fs => fs.ReadFromFileAsync<Product>(It.IsAny<string>(), It.IsAny<string>()))
                 .ReturnsAsync(fileProduct);
-            _manufacturerRepository.Setup(mr => mr.GetRangeAsync(It.IsAny<IEnumerable<string>>()))
+            _manufacturerRepository.Setup(mr => mr.GetRangeAsync(m => It.IsAny<IEnumerable<string>>().Contains(m.Id)))
                 .ReturnsAsync(new List<Manufacturer> {new()});
-            _customerRepository.Setup(cr => cr.GetAsync(_dbProduct.Customer.Id)).ReturnsAsync(_dbProduct.Customer);
+            _customerRepository.Setup(cr => cr.GetAsync(c => c.Id == _dbProduct.Customer.Id))
+                .ReturnsAsync(_dbProduct.Customer);
             _mapper.Setup(m => m.Map<Product>(product)).Returns(_dbProduct);
             _mapper.Setup(m => m.Map<ProductDto>(_dbProduct)).Returns(_product);
             _mapper.Setup(m => m.Map<Customer>(_dbProduct.Customer)).Returns(_dbProduct.Customer);
@@ -218,7 +221,7 @@ namespace Warehouse.Api.Products.Tests.Business
 
         private void ConfigureDelete(Product product)
         {
-            _productRepository.Setup(pr => pr.GetAsync(_dbProduct.Id)).ReturnsAsync(product);
+            _productRepository.Setup(pr => pr.GetAsync(p => p.Id == _dbProduct.Id)).ReturnsAsync(product);
         }
 
         private PageDataDto<ProductDto> ConfigureGetPage()
@@ -228,7 +231,7 @@ namespace Warehouse.Api.Products.Tests.Business
             PageDataDto<ProductDto> expected = new(productDtos, 1);
             _productRepository.Setup(pr => pr.GetPageAsync(1, 1))
                 .ReturnsAsync(products);
-            _productRepository.Setup(pr => pr.GetCountAsync())
+            _productRepository.Setup(pr => pr.GetCountAsync(_ => true))
                 .ReturnsAsync(1);
             _mapper.Setup(m => m.Map<List<ProductDto>>(products)).Returns(productDtos);
             return expected;

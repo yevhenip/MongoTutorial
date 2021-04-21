@@ -2,8 +2,9 @@
 using System.Threading.Tasks;
 using Warehouse.Core.Common;
 using Warehouse.Core.DTO;
+using Warehouse.Core.DTO.Customer;
+using Warehouse.Core.DTO.Manufacturer;
 using Warehouse.Core.DTO.Product;
-using Warehouse.Domain;
 
 namespace Warehouse.Core.Interfaces.Services
 {
@@ -52,31 +53,31 @@ namespace Warehouse.Core.Interfaces.Services
         /// <summary>
         /// Deletes manufacturer from product
         /// </summary>
-        /// <param name="manufacturerId"></param>
-        Task DeleteManufacturerFromProductAsync(string manufacturerId);
+        /// <param name="manufacturer"></param>
+        Task DeleteManufacturerFromProductAsync(DeletedManufacturer manufacturer);
 
         /// <summary>
         /// Updates manufacturer in product
         /// </summary>
         /// <param name="manufacturer"></param>
-        Task UpdateManufacturerInProductsAsync(Manufacturer manufacturer);
+        Task UpdateManufacturerInProductsAsync(UpdatedManufacturer manufacturer);
 
         /// <summary>
         /// Deletes customer from product
         /// </summary>
-        /// <param name="customerId"></param>
-        Task DeleteCustomerFromProductAsync(string customerId);
+        /// <param name="customer"></param>
+        Task DeleteCustomerFromProductAsync(DeletedCustomer customer);
 
         /// <summary>
         /// Creates received manufacturer
         /// </summary>
         /// <param name="manufacturer"></param>
-        Task CreateManufacturerAsync(Manufacturer manufacturer);
+        Task CreateManufacturerAsync(CreatedManufacturer manufacturer);
 
         /// <summary>
         /// Creates received customer
         /// </summary>
         /// <param name="customer"></param>
-        Task CreateCustomerAsync(Customer customer);
+        Task CreateCustomerAsync(CreatedCustomer customer);
     }
 }

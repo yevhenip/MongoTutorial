@@ -98,7 +98,7 @@ namespace Warehouse.Api.Users.Tests.Business
         {
             var user = ConfigureCreate("b", "b");
 
-            var result = await _userService.CreateAsync(_dbUser);
+            var result = await _userService.CreateAsync(new CreatedUser(_dbUser));
 
             Assert.That(result.Data, Is.EqualTo(_user));
             user.UserName = "a";
@@ -110,7 +110,8 @@ namespace Warehouse.Api.Users.Tests.Business
         {
             var user = ConfigureCreate("a", "b");
 
-            Assert.ThrowsAsync<Result<UserDto>>(async () => await _userService.CreateAsync(_dbUser));
+            Assert.ThrowsAsync<Result<UserDto>>(async () =>
+                await _userService.CreateAsync(new CreatedUser(_dbUser)));
             user.UserName = "a";
         }
 
@@ -119,14 +120,15 @@ namespace Warehouse.Api.Users.Tests.Business
         {
             var user = ConfigureCreate("b", "a");
 
-            Assert.ThrowsAsync<Result<UserDto>>(async () => await _userService.CreateAsync(_dbUser));
+            Assert.ThrowsAsync<Result<UserDto>>(async () =>
+                await _userService.CreateAsync(new CreatedUser(_dbUser)));
             user.Email = "a";
         }
 
         [Test]
         public async Task UpdateAsync_WhenCalledWithUser_ReturnsUser()
         {
-            await _userService.UpdateAsync(_dbUser);
+            await _userService.UpdateAsync(new UpdatedUser(_dbUser));
         }
 
         [Test]
@@ -199,15 +201,16 @@ namespace Warehouse.Api.Users.Tests.Business
         {
             List<UserDto> users = new() {_user};
             List<User> usersFromDb = new() {_dbUser};
-            _userRepository.Setup(ur => ur.GetRangeByRoleAsync(It.IsAny<string>())).ReturnsAsync(usersFromDb);
-            _userRepository.Setup(ur => ur.GetAllAsync()).ReturnsAsync(usersFromDb);
+            _userRepository.Setup(ur => ur.GetRangeAsync(u => u.UserName == It.IsAny<string>()))
+                .ReturnsAsync(usersFromDb);
+            _userRepository.Setup(ur => ur.GetRangeAsync(_ => true)).ReturnsAsync(usersFromDb);
             _mapper.Setup(m => m.Map<List<UserDto>>(usersFromDb)).Returns(users);
             return users;
         }
 
         private void ConfigureGet(User dbUser, User fileUser)
         {
-            _userRepository.Setup(ur => ur.GetAsync(_dbUser.Id)).ReturnsAsync(dbUser);
+            _userRepository.Setup(ur => ur.GetAsync(u => u.Id == _dbUser.Id)).ReturnsAsync(dbUser);
             _fileService.Setup(fs => fs.ReadFromFileAsync<User>(It.IsAny<string>(), It.IsAny<string>()))
                 .ReturnsAsync(fileUser);
             _mapper.Setup(m => m.Map<UserDto>(_dbUser)).Returns(_user);
@@ -219,7 +222,7 @@ namespace Warehouse.Api.Users.Tests.Business
             user.Email = email;
             user.UserName = userName;
             List<User> usersFromDb = new() {user};
-            _userRepository.Setup(ur => ur.GetAllAsync()).ReturnsAsync(usersFromDb);
+            _userRepository.Setup(ur => ur.GetRangeAsync(_ => true)).ReturnsAsync(usersFromDb);
             _mapper.Setup(m => m.Map<User>(_user)).Returns(_dbUser);
             _mapper.Setup(m => m.Map<UserDto>(_dbUser)).Returns(_user);
             return user;
@@ -228,7 +231,7 @@ namespace Warehouse.Api.Users.Tests.Business
         private UserModelDto ConfigureUpdate(User dbUser, User fileUser)
         {
             UserModelDto user = new("a", "a", "a", "a");
-            _userRepository.Setup(ur => ur.GetAsync(_dbUser.Id)).ReturnsAsync(dbUser);
+            _userRepository.Setup(ur => ur.GetAsync(u => u.Id == _dbUser.Id)).ReturnsAsync(dbUser);
             _fileService.Setup(fs => fs.ReadFromFileAsync<User>(It.IsAny<string>(), It.IsAny<string>()))
                 .ReturnsAsync(fileUser);
             _mapper.Setup(m => m.Map<UserDto>(user)).Returns(_user);
@@ -238,8 +241,8 @@ namespace Warehouse.Api.Users.Tests.Business
 
         private void ConfigureDelete(User user)
         {
-            _userRepository.Setup(ur => ur.GetAsync(_dbUser.Id)).ReturnsAsync(user);
-            _refreshTokenRepository.Setup(tr => tr.GetByUserIdAsync(_dbUser.Id))
+            _userRepository.Setup(ur => ur.GetAsync(u => u.Id == _dbUser.Id)).ReturnsAsync(user);
+            _refreshTokenRepository.Setup(tr => tr.GetAsync(t => t.User.Id == _dbUser.Id))
                 .ReturnsAsync(new RefreshToken
                 {
                     Id = "a", Token = "a", User = _dbUser, DateCreated = DateTime.Today,
@@ -254,7 +257,7 @@ namespace Warehouse.Api.Users.Tests.Business
             PageDataDto<UserDto> expected = new(userDtos, 1);
             _userRepository.Setup(ur => ur.GetPageAsync(1, 1))
                 .ReturnsAsync(users);
-            _userRepository.Setup(ur => ur.GetCountAsync())
+            _userRepository.Setup(ur => ur.GetCountAsync(_ => true))
                 .ReturnsAsync(1);
             _mapper.Setup(m => m.Map<List<UserDto>>(users)).Returns(userDtos);
             return expected;

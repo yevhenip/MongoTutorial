@@ -56,7 +56,7 @@ namespace Warehouse.Api.Tests.Common
                 new("Id", "a"),
                 new("SessionId", session)
             }));
-            _userRepository.Setup(ur => ur.GetAsync(_user.Id)).ReturnsAsync(_user);
+            _userRepository.Setup(ur => ur.GetAsync(u =>u.Id == _user.Id)).ReturnsAsync(_user);
             return new(
                 new DefaultHttpContext(),
                 new AuthenticationScheme("Test", "Test", typeof(IAuthenticationHandler)),

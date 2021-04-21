@@ -37,7 +37,7 @@ namespace Warehouse.Api.Customers.Business
 
         public async Task<Result<List<CustomerDto>>> GetAllAsync()
         {
-            var customersInDb = await _customerRepository.GetAllAsync();
+            var customersInDb = await _customerRepository.GetRangeAsync(_ => true);
             var customers = Mapper.Map<List<CustomerDto>>(customersInDb);
 
             return Result<List<CustomerDto>>.Success(customers);
@@ -46,7 +46,7 @@ namespace Warehouse.Api.Customers.Business
         public async Task<Result<PageDataDto<CustomerDto>>> GetPageAsync(int page, int pageSize)
         {
             var customersInDb = await _customerRepository.GetPageAsync(page, pageSize);
-            var count = await _customerRepository.GetCountAsync();
+            var count = await _customerRepository.GetCountAsync(_ => true);
             var customers = Mapper.Map<List<CustomerDto>>(customersInDb);
             PageDataDto<CustomerDto> pageData = new(customers, count);
 
@@ -66,7 +66,7 @@ namespace Warehouse.Api.Customers.Business
                 return Result<CustomerDto>.Success(customer);
             }
 
-            var customerInDb = await _customerRepository.GetAsync(id);
+            var customerInDb = await _customerRepository.GetAsync(c => c.Id == id);
             if (customerInDb is not null)
             {
                 await DistributedCache.SetCacheAsync(cacheKey, customerInDb, _customerSettings);
@@ -88,14 +88,14 @@ namespace Warehouse.Api.Customers.Business
             var cacheKey = $"Customer-{id}";
             if (!await DistributedCache.IsExistsAsync(cacheKey))
             {
-                var customerInDb = await _customerRepository.GetAsync(id);
+                var customerInDb = await _customerRepository.GetAsync(c => c.Id == id);
                 CheckForNull(customerInDb);
             }
 
-            await Bus.PubSub.PublishAsync(id);
+            await Bus.PubSub.PublishAsync(new DeletedCustomer(id));
             await DistributedCache.RemoveAsync(cacheKey);
             await FileService.DeleteFileAsync(_path, cacheKey);
-            await _customerRepository.DeleteAsync(id);
+            await _customerRepository.DeleteAsync(c => c.Id == id);
 
             return Result<object>.Success();
         }
@@ -113,7 +113,7 @@ namespace Warehouse.Api.Customers.Business
             await FileService.WriteToFileAsync(customerToDb, _path, cacheKey);
 
             await _customerRepository.CreateAsync(customerToDb);
-            await Bus.PubSub.PublishAsync(customerToDb);
+            await Bus.PubSub.PublishAsync(new CreatedCustomer(customerToDb));
             await Bus.PubSub.PublishAsync(log);
             return Result<CustomerDto>.Success(customer with {Id = customerToDb.Id});
         }

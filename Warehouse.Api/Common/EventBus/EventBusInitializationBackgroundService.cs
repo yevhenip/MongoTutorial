@@ -5,7 +5,7 @@ using EasyNetQ;
 using EasyNetQ.AutoSubscribe;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
-using Warehouse.Api.Settings;
+using Warehouse.Core.Settings;
 
 namespace Warehouse.Api.Common.EventBus
 {

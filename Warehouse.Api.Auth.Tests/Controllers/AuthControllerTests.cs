@@ -52,7 +52,7 @@ namespace Warehouse.Api.Auth.Tests.Controllers
         {
             LoginDto login = new("a", "a");
             UserAuthenticatedDto authenticated = new(_user, "a", "a");
-            _authService.Setup(@as => @as.LoginAsync(login, It.IsAny<string>()))
+            _authService.Setup(@as => @as.LoginAsync(login))
                 .ReturnsAsync(Result<UserAuthenticatedDto>.Success(authenticated));
 
             var result = await _authController.Login(login) as OkObjectResult;
@@ -66,7 +66,7 @@ namespace Warehouse.Api.Auth.Tests.Controllers
             TokenDto token = new("b");
             UserAuthenticatedDto authenticated = new(_user, "a", "a");
             ConfigureUser();
-            _authService.Setup(@as => @as.RefreshTokenAsync(_user.Id, token, It.IsAny<string>()))
+            _authService.Setup(@as => @as.RefreshTokenAsync(_user.Id, token))
                 .ReturnsAsync(Result<UserAuthenticatedDto>.Success(authenticated));
 
             var result = await _authController.RefreshToken(token) as OkObjectResult;

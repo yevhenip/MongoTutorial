@@ -2,6 +2,7 @@
 using Warehouse.Core.Common;
 using Warehouse.Core.DTO.Auth;
 using Warehouse.Core.DTO.Users;
+using Warehouse.Domain;
 
 namespace Warehouse.Core.Interfaces.Services
 {
@@ -18,23 +19,23 @@ namespace Warehouse.Core.Interfaces.Services
         /// Logins user and sends message to update user
         /// </summary>
         /// <param name="login"></param>
-        /// <param name="sessionId"></param>
         /// <returns>Authenticated user with bearer and refresh tokens</returns>
-        Task<Result<UserAuthenticatedDto>> LoginAsync(LoginDto login, string sessionId);
+        Task<Result<UserAuthenticatedDto>> LoginAsync(LoginDto login);
 
         /// <summary>
         /// Refreshes user's session and sends message to update user
         /// </summary>
         /// <param name="userId"></param>
         /// <param name="token"></param>
-        /// <param name="sessionId"></param>
         /// <returns>Authenticated user with bearer and refresh tokens</returns>
-        Task<Result<UserAuthenticatedDto>> RefreshTokenAsync(string userId, TokenDto token, string sessionId);
+        Task<Result<UserAuthenticatedDto>> RefreshTokenAsync(string userId, TokenDto token);
 
         /// <summary>
         /// Invalidate user's session id and sends message to update user
         /// </summary>
         /// <param name="userId"></param>
         Task<Result<object>> LogoutAsync(string userId);
+
+        Task DeleteTokenAsync(RefreshToken refreshToken);
     }
 }

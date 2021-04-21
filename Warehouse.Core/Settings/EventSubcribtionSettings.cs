@@ -1,6 +1,6 @@
 using System.Reflection;
 
-namespace Warehouse.Api.Settings
+namespace Warehouse.Core.Settings
 {
     public class EventSubscriptionSettings
     {

@@ -19,6 +19,8 @@ namespace Warehouse.Api.Users
         {
             base.ConfigureServices(services);
             services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+            services.AddScoped<DeletedRefreshTokenHandler>();
+            services.AddScoped<CreatedRefreshTokenHandler>();
             services.AddScoped<IUserService, UserService>();
             services.AddScoped<CreatedUserHandler>();
             services.AddScoped<UpdatedUserHandler>();

@@ -19,7 +19,7 @@ namespace Warehouse.Api.Common
         public override async Task TokenValidated(TokenValidatedContext context)
         {
             var userId = context.Principal?.Claims.SingleOrDefault(c => c.Type == "Id")?.Value;
-            var user = await _userRepository.GetAsync(userId);
+            var user = await _userRepository.GetAsync(u => u.Id == userId);
             var sessionId = context.Principal?.Claims.SingleOrDefault(c => c.Type == "SessionId")?.Value;
             if (user.SessionId != sessionId)
             {

@@ -1,12 +1,12 @@
 using System.Threading;
 using System.Threading.Tasks;
 using EasyNetQ.AutoSubscribe;
+using Warehouse.Core.DTO.Users;
 using Warehouse.Core.Interfaces.Services;
-using Warehouse.Domain;
 
 namespace Warehouse.Api.Users.Receivers
 {
-    public class CreatedUserHandler : IConsumeAsync<User>
+    public class CreatedUserHandler : IConsumeAsync<CreatedUser>
     {
         private readonly IUserService _userService;
 
@@ -15,7 +15,7 @@ namespace Warehouse.Api.Users.Receivers
             _userService = userService;
         }
 
-        public async Task ConsumeAsync(User message, CancellationToken cancellationToken = new())
+        public async Task ConsumeAsync(CreatedUser message, CancellationToken cancellationToken = new())
         {
             await _userService.CreateAsync(message);
         }

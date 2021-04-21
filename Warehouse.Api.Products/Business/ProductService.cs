@@ -13,7 +13,9 @@ using Warehouse.Api.Business;
 using Warehouse.Api.Extensions;
 using Warehouse.Core.Common;
 using Warehouse.Core.DTO;
+using Warehouse.Core.DTO.Customer;
 using Warehouse.Core.DTO.Log;
+using Warehouse.Core.DTO.Manufacturer;
 using Warehouse.Core.DTO.Product;
 using Warehouse.Core.Interfaces.Repositories;
 using Warehouse.Core.Interfaces.Services;
@@ -46,7 +48,7 @@ namespace Warehouse.Api.Products.Business
 
         public async Task<Result<List<ProductDto>>> GetAllAsync()
         {
-            var productsInDb = await _productRepository.GetAllAsync();
+            var productsInDb = await _productRepository.GetRangeAsync(_ => true);
             var products = Mapper.Map<List<ProductDto>>(productsInDb);
 
             return Result<List<ProductDto>>.Success(products);
@@ -55,7 +57,7 @@ namespace Warehouse.Api.Products.Business
         public async Task<Result<PageDataDto<ProductDto>>> GetPageAsync(int page, int pageSize)
         {
             var productsInDb = await _productRepository.GetPageAsync(page, pageSize);
-            var count = await _productRepository.GetCountAsync();
+            var count = await _productRepository.GetCountAsync(_ => true);
             var products = Mapper.Map<List<ProductDto>>(productsInDb);
             PageDataDto<ProductDto> pageData = new(products, count);
 
@@ -75,7 +77,7 @@ namespace Warehouse.Api.Products.Business
                 return Result<ProductDto>.Success(product);
             }
 
-            var productInDb = await _productRepository.GetAsync(id);
+            var productInDb = await _productRepository.GetAsync(p => p.Id == id);
 
             if (productInDb is not null)
             {
@@ -95,7 +97,7 @@ namespace Warehouse.Api.Products.Business
 
         public async Task<Result<byte[]>> GetExportFileAsync()
         {
-            var productsInDb = await _productRepository.GetAllAsync();
+            var productsInDb = await _productRepository.GetRangeAsync(_ => true);
             var exportProducts = Mapper.Map<List<ExportProduct>>(productsInDb);
             StringBuilder builder = new();
             foreach (var product in exportProducts)
@@ -132,7 +134,7 @@ namespace Warehouse.Api.Products.Business
             Product productInDb;
             if (!await DistributedCache.IsExistsAsync(cacheKey))
             {
-                productInDb = await _productRepository.GetAsync(productId) ??
+                productInDb = await _productRepository.GetAsync(p => p.Id == productId) ??
                               await FileService.ReadFromFileAsync<Product>(_path, cacheKey);
 
                 CheckForNull(productInDb);
@@ -148,7 +150,7 @@ namespace Warehouse.Api.Products.Business
             await DistributedCache.SetCacheAsync(cacheKey, productInDb, _productSettings);
             await FileService.WriteToFileAsync(productInDb, _path, cacheKey);
             await Bus.PubSub.PublishAsync(log);
-            await _productRepository.UpdateAsync(productInDb);
+            await _productRepository.UpdateAsync(p => p.Id == productInDb.Id, productInDb);
             return Result<ProductDto>.Success(result);
         }
 
@@ -157,60 +159,64 @@ namespace Warehouse.Api.Products.Business
             var cacheKey = $"Product-{id}";
             if (!await DistributedCache.IsExistsAsync(cacheKey))
             {
-                var productInDb = await _productRepository.GetAsync(id);
+                var productInDb = await _productRepository.GetAsync(p => p.Id == id);
                 CheckForNull(productInDb);
             }
 
-            await _productRepository.DeleteAsync(id);
+            await _productRepository.DeleteAsync(p => p.Id == id);
             await DistributedCache.RemoveAsync(cacheKey);
             await FileService.DeleteFileAsync(_path, cacheKey);
 
             return Result<object>.Success();
         }
 
-        public async Task DeleteManufacturerFromProductAsync(string manufacturerId)
+        public async Task DeleteManufacturerFromProductAsync(DeletedManufacturer manufacturer)
         {
-            var products = await _productRepository.GetRangeByManufacturerId(manufacturerId);
+            var products = await _productRepository.GetRangeAsync(p =>
+                p.Manufacturers.Any(m => m.Id == manufacturer.Id));
             foreach (var product in products)
             {
-                product.Manufacturers.RemoveAll(m => m.Id == manufacturerId);
-                await _productRepository.UpdateAsync(product);
+                product.Manufacturers.RemoveAll(m => m.Id == manufacturer.Id);
+                await _productRepository.UpdateAsync(p => p.Id == product.Id, product);
             }
 
-            await _manufacturerRepository.DeleteAsync(manufacturerId);
+            await _manufacturerRepository.DeleteAsync(m => m.Id == manufacturer.Id);
         }
 
-        public async Task UpdateManufacturerInProductsAsync(Manufacturer manufacturer)
+        public async Task UpdateManufacturerInProductsAsync(UpdatedManufacturer manufacturer)
         {
-            var products = await _productRepository.GetRangeByManufacturerId(manufacturer.Id);
+            var products = await _productRepository.GetRangeAsync(p =>
+                p.Manufacturers.Any(m => m.Id == manufacturer.Manufacturer.Id));
             foreach (var product in products)
             {
-                await UpdateManufacturerInProductAsync(product, manufacturer.Id, manufacturer);
+                await UpdateManufacturerInProductAsync(product, manufacturer.Manufacturer.Id,
+                    manufacturer.Manufacturer);
             }
 
-            await _manufacturerRepository.UpdateAsync(manufacturer);
+            await _manufacturerRepository.UpdateAsync(m => m.Id == manufacturer.Manufacturer.Id,
+                manufacturer.Manufacturer);
         }
 
-        public async Task DeleteCustomerFromProductAsync(string customerId)
+        public async Task DeleteCustomerFromProductAsync(DeletedCustomer customer)
         {
-            var products = await _productRepository.GetByCustomerId(customerId);
+            var products = await _productRepository.GetRangeAsync(p => p.Customer.Id == customer.Id);
             foreach (var product in products)
             {
                 product.Customer = null;
-                await _productRepository.UpdateAsync(product);
+                await _productRepository.UpdateAsync(p => p.Id == product.Id, product);
             }
 
-            await _customerRepository.DeleteAsync(customerId);
+            await _customerRepository.DeleteAsync(c => c.Id == customer.Id);
         }
 
-        public async Task CreateManufacturerAsync(Manufacturer manufacturer)
+        public async Task CreateManufacturerAsync(CreatedManufacturer manufacturer)
         {
-            await _manufacturerRepository.CreateAsync(manufacturer);
+            await _manufacturerRepository.CreateAsync(manufacturer.Manufacturer);
         }
 
-        public async Task CreateCustomerAsync(Customer customer)
+        public async Task CreateCustomerAsync(CreatedCustomer customer)
         {
-            await _customerRepository.CreateAsync(customer);
+            await _customerRepository.CreateAsync(customer.Customer);
         }
 
         private async Task UpdateManufacturerInProductAsync(Product product, string manufacturerId,
@@ -220,14 +226,14 @@ namespace Warehouse.Api.Products.Business
             manufacturers.RemoveAll(m => m.Id == manufacturerId);
             manufacturers.Add(manufacturer);
             product.Manufacturers = manufacturers;
-            await _productRepository.UpdateAsync(product);
+            await _productRepository.UpdateAsync(p => p.Id == product.Id, product);
         }
 
         private async Task<Product> GetManufacturersAndCustomer(ProductModelDto product,
             IReadOnlyCollection<string> manufacturerIds)
         {
             var manufacturersInDb = await GetManufacturers(manufacturerIds);
-            var customerInDb = await _customerRepository.GetAsync(product.CustomerId);
+            var customerInDb = await _customerRepository.GetAsync(c => c.Id == product.CustomerId);
 
             if (manufacturerIds.Count != manufacturersInDb.Count)
             {
@@ -260,7 +266,8 @@ namespace Warehouse.Api.Products.Business
                 }
             }
 
-            var manufacturersInDb = await _manufacturerRepository.GetRangeAsync(notCachedManufacturerIds);
+            var manufacturersInDb =
+                await _manufacturerRepository.GetRangeAsync(m => notCachedManufacturerIds.Contains(m.Id));
 
             foreach (var manufacturerDto in manufacturersInDb)
             {

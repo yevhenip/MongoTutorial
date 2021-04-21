@@ -106,7 +106,7 @@ namespace Warehouse.Api.Customers.Tests.Business
 
             Assert.That(result.Data, Is.EqualTo(null));
         }
-        
+
         [Test]
         public async Task GetPageAsync_WhenCalled_ReturnsPageDateDtoOfCustomerDto()
         {
@@ -117,19 +117,19 @@ namespace Warehouse.Api.Customers.Tests.Business
             Assert.That(result.Data, Is.EqualTo(expected));
         }
 
-        
+
         private List<CustomerDto> ConfigureGetAll()
         {
             List<CustomerDto> customers = new() {_customer};
             List<Customer> customersFromDb = new() {_dbCustomer};
-            _customerRepository.Setup(cr => cr.GetAllAsync()).ReturnsAsync(customersFromDb);
+            _customerRepository.Setup(cr => cr.GetRangeAsync(_ => true)).ReturnsAsync(customersFromDb);
             _mapper.Setup(m => m.Map<List<CustomerDto>>(customersFromDb)).Returns(customers);
             return customers;
         }
 
         private void ConfigureGet(Customer dbCustomer, Customer fileCustomer)
         {
-            _customerRepository.Setup(cr => cr.GetAsync(_dbCustomer.Id)).ReturnsAsync(dbCustomer);
+            _customerRepository.Setup(cr => cr.GetAsync(c => c.Id == _dbCustomer.Id)).ReturnsAsync(dbCustomer);
             _fileService.Setup(fs => fs.ReadFromFileAsync<Customer>(It.IsAny<string>(), It.IsAny<string>()))
                 .ReturnsAsync(fileCustomer);
             _mapper.Setup(m => m.Map<CustomerDto>(_dbCustomer)).Returns(_customer);
@@ -143,9 +143,9 @@ namespace Warehouse.Api.Customers.Tests.Business
 
         private void ConfigureDelete(Customer customer)
         {
-            _customerRepository.Setup(cr => cr.GetAsync(_dbCustomer.Id)).ReturnsAsync(customer);
+            _customerRepository.Setup(cr => cr.GetAsync(c => c.Id == _dbCustomer.Id)).ReturnsAsync(customer);
         }
-        
+
         private PageDataDto<CustomerDto> ConfigureGetPage()
         {
             List<CustomerDto> customerDtos = new();
@@ -153,7 +153,7 @@ namespace Warehouse.Api.Customers.Tests.Business
             PageDataDto<CustomerDto> expected = new(customerDtos, 1);
             _customerRepository.Setup(cr => cr.GetPageAsync(1, 1))
                 .ReturnsAsync(customers);
-            _customerRepository.Setup(cr => cr.GetCountAsync())
+            _customerRepository.Setup(cr => cr.GetCountAsync(_ => true))
                 .ReturnsAsync(1);
             _mapper.Setup(m => m.Map<List<CustomerDto>>(customers)).Returns(customerDtos);
             return expected;

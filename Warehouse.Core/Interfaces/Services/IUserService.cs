@@ -2,8 +2,8 @@
 using System.Threading.Tasks;
 using Warehouse.Core.Common;
 using Warehouse.Core.DTO;
+using Warehouse.Core.DTO.Auth;
 using Warehouse.Core.DTO.Users;
-using Warehouse.Domain;
 
 namespace Warehouse.Core.Interfaces.Services
 {
@@ -33,7 +33,7 @@ namespace Warehouse.Core.Interfaces.Services
         /// </summary>
         /// <param name="user"></param>
         /// <returns>Created user</returns>
-        Task<Result<UserDto>> CreateAsync(User user);
+        Task<Result<UserDto>> CreateAsync(CreatedUser user);
 
         /// <summary>
         /// Updates user in database, cache, filesystem and sends message with user
@@ -48,12 +48,15 @@ namespace Warehouse.Core.Interfaces.Services
         /// Updates user in database, cache and filesystem
         /// </summary>
         /// <param name="user"></param>
-        Task UpdateAsync(User user);
+        Task UpdateAsync(UpdatedUser user);
 
         /// <summary>
         /// Deletes user from cache, file system, database and sends a message with user id
         /// </summary>
         /// <param name="id"></param>
         Task<Result<object>> DeleteAsync(string id);
+
+        Task CreateTokenAsync(CreatedToken token);
+        Task DeleteTokenAsync(DeletedToken token);
     }
 }

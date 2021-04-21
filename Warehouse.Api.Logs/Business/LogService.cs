@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using AutoMapper;
 using EasyNetQ;
@@ -23,7 +24,7 @@ namespace Warehouse.Api.Logs.Business
 
         public async Task<Result<List<LogDto>>> GetAllAsync()
         {
-            var logsInDb = await _logRepository.GetAllAsync();
+            var logsInDb = await _logRepository.GetRangeAsync(_ => true);
             var logs = Mapper.Map<List<LogDto>>(logsInDb);
 
             return Result<List<LogDto>>.Success(logs);
@@ -31,7 +32,7 @@ namespace Warehouse.Api.Logs.Business
 
         public async Task<Result<List<LogDto>>> GetActualAsync()
         {
-            var logsInDb = await _logRepository.GetActualAsync();
+            var logsInDb = await _logRepository.GetRangeAsync(l => l.ActionDate >= DateTime.UtcNow.AddDays(-1));
             var logs = Mapper.Map<List<LogDto>>(logsInDb);
 
             return Result<List<LogDto>>.Success(logs);
@@ -39,7 +40,7 @@ namespace Warehouse.Api.Logs.Business
 
         public async Task<Result<LogDto>> GetAsync(string id)
         {
-            var logInDb = await _logRepository.GetAsync(id);
+            var logInDb = await _logRepository.GetAsync(l => l.Id == id);
             CheckForNull(logInDb);
             var log = Mapper.Map<LogDto>(logInDb);
 

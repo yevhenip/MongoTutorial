@@ -12,6 +12,7 @@ using Warehouse.Api.Business;
 using Warehouse.Api.Extensions;
 using Warehouse.Core.Common;
 using Warehouse.Core.DTO;
+using Warehouse.Core.DTO.Auth;
 using Warehouse.Core.DTO.Log;
 using Warehouse.Core.DTO.Users;
 using Warehouse.Core.Interfaces.Repositories;
@@ -40,7 +41,7 @@ namespace Warehouse.Api.Users.Business
 
         public async Task<Result<List<UserDto>>> GetAllAsync()
         {
-            var usersFromDb = await _userRepository.GetAllAsync();
+            var usersFromDb = await _userRepository.GetRangeAsync(_ => true);
             var users = Mapper.Map<List<UserDto>>(usersFromDb);
 
             return Result<List<UserDto>>.Success(users);
@@ -49,7 +50,7 @@ namespace Warehouse.Api.Users.Business
         public async Task<Result<PageDataDto<UserDto>>> GetPageAsync(int page, int pageSize)
         {
             var usersInDb = await _userRepository.GetPageAsync(page, pageSize);
-            var count = await _userRepository.GetCountAsync();
+            var count = await _userRepository.GetCountAsync(_ => true);
             var users = Mapper.Map<List<UserDto>>(usersInDb);
             PageDataDto<UserDto> pageData = new(users, count);
 
@@ -68,7 +69,7 @@ namespace Warehouse.Api.Users.Business
                 return Result<UserDto>.Success(user);
             }
 
-            var userInDb = await _userRepository.GetAsync(id);
+            var userInDb = await _userRepository.GetAsync(u => u.Id == id);
             if (userInDb is not null)
             {
                 await DistributedCache.SetCacheAsync(cacheKey, userInDb, _userSettings);
@@ -88,7 +89,7 @@ namespace Warehouse.Api.Users.Business
 
         public async Task<Result<UserDto>> GetByUserNameAsync(string userName)
         {
-            var userInDb = await _userRepository.GetByUserNameAsync(userName);
+            var userInDb = await _userRepository.GetAsync(u => u.UserName == userName);
             CheckForNull(userInDb);
 
             var user = Mapper.Map<UserDto>(userInDb);
@@ -96,14 +97,14 @@ namespace Warehouse.Api.Users.Business
             return Result<UserDto>.Success(user);
         }
 
-        public async Task<Result<UserDto>> CreateAsync(User user)
+        public async Task<Result<UserDto>> CreateAsync(CreatedUser user)
         {
-            await IsValid(user);
+            await IsValid(user.User);
 
-            var userFromDb = Mapper.Map<UserDto>(user);
-            await _userRepository.CreateAsync(user);
+            var userFromDb = Mapper.Map<UserDto>(user.User);
+            await _userRepository.CreateAsync(user.User);
 
-            var cacheKey = $"User-{user.Id}";
+            var cacheKey = $"User-{user.User.Id}";
             await DistributedCache.SetCacheAsync(cacheKey, user, _userSettings);
             await FileService.WriteToFileAsync(user, _path, cacheKey);
 
@@ -116,14 +117,14 @@ namespace Warehouse.Api.Users.Business
             User userInDb;
             if (!await DistributedCache.IsExistsAsync(cacheKey))
             {
-                userInDb = await _userRepository.GetAsync(userId) ??
+                userInDb = await _userRepository.GetAsync(u => u.Id == userId) ??
                            await FileService.ReadFromFileAsync<User>(_path, cacheKey);
                 CheckForNull(userInDb);
             }
 
             var userDto = Mapper.Map<UserDto>(user) with {Id = userId};
             userInDb = Mapper.Map<User>(userDto);
-            var token = await _tokenRepository.GetByUserIdAsync(userId);
+            var token = await _tokenRepository.GetAsync(t => t.User.Id == userId);
             LogDto log =
                 new(Guid.NewGuid().ToString(), userName, "edited user", JsonSerializer.Serialize(userDto,
                     JsonSerializerOptions), DateTime.UtcNow);
@@ -131,10 +132,10 @@ namespace Warehouse.Api.Users.Business
             if (token is not null)
             {
                 token.User = userInDb;
-                await _tokenRepository.UpdateAsync(token);
+                await _tokenRepository.UpdateAsync(t => t.Id == token.Id, token);
             }
 
-            await _userRepository.UpdateAsync(userInDb);
+            await _userRepository.UpdateAsync(u => u.Id == userInDb.Id, userInDb);
             await DistributedCache.UpdateAsync(cacheKey, userInDb);
             await FileService.WriteToFileAsync(userInDb, _path, cacheKey);
             await Bus.PubSub.PublishAsync(log);
@@ -142,13 +143,13 @@ namespace Warehouse.Api.Users.Business
             return Result<UserDto>.Success(userDto);
         }
 
-        public async Task UpdateAsync(User user)
+        public async Task UpdateAsync(UpdatedUser user)
         {
-            var cacheKey = $"User-{user.Id}";
+            var cacheKey = $"User-{user.User.Id}";
 
-            await _userRepository.UpdateAsync(user);
-            await DistributedCache.UpdateAsync(cacheKey, user);
-            await FileService.WriteToFileAsync(user, _path, cacheKey);
+            await _userRepository.UpdateAsync(u => u.Id == user.User.Id, user.User);
+            await DistributedCache.UpdateAsync(cacheKey, user.User);
+            await FileService.WriteToFileAsync(user.User, _path, cacheKey);
         }
 
         public async Task<Result<object>> DeleteAsync(string id)
@@ -156,26 +157,37 @@ namespace Warehouse.Api.Users.Business
             var cacheKey = $"User-{id}";
             if (!await DistributedCache.IsExistsAsync(cacheKey))
             {
-                var userInDb = await _userRepository.GetAsync(id);
+                var userInDb = await _userRepository.GetAsync(u => u.Id == id);
                 CheckForNull(userInDb);
             }
 
-            var token = await _tokenRepository.GetByUserIdAsync(id);
+            var token = await _tokenRepository.GetAsync(t => t.Id == id);
             if (token is not null)
             {
-                await _tokenRepository.DeleteAsync(token.Id);
+                await _tokenRepository.DeleteAsync(t => t.Id == token.Id);
+                await Bus.PubSub.PublishAsync(token);
             }
 
-            await _userRepository.DeleteAsync(id);
+            await _userRepository.DeleteAsync(u => u.Id == id);
             await DistributedCache.RemoveAsync(cacheKey);
             await FileService.DeleteFileAsync(_path, cacheKey);
 
             return Result<object>.Success();
         }
 
+        public async Task CreateTokenAsync(CreatedToken token)
+        {
+            await _tokenRepository.CreateAsync(token.Token);
+        }
+        
+        public async Task DeleteTokenAsync(DeletedToken token)
+        {
+            await _tokenRepository.DeleteAsync(t => t.Id == token.Id);
+        }
+
         public async Task<Result<List<UserDto>>> GetRangeByRoleAsync(string roleName)
         {
-            var usersInDb = await _userRepository.GetRangeByRoleAsync(roleName);
+            var usersInDb = await _userRepository.GetRangeAsync(u => u.Roles.Contains(roleName));
             var users = Mapper.Map<List<UserDto>>(usersInDb);
 
             return Result<List<UserDto>>.Success(users);
@@ -183,7 +195,7 @@ namespace Warehouse.Api.Users.Business
 
         private async Task IsValid(User user)
         {
-            var users = await _userRepository.GetAllAsync();
+            var users = await _userRepository.GetRangeAsync(_ => true);
             if (users.Any(u => u.Email == user.Email))
             {
                 throw Result<UserDto>.Failure("email", "User with such email already exists",

@@ -60,25 +60,24 @@ namespace Warehouse.Api.Auth.Business
             };
 
             await _tokenRepository.CreateAsync(refreshToken);
-            await Bus.PubSub.PublishAsync(userToDb);
             UserAuthenticatedDto authenticatedDto = new(user, jwtToken, refreshToken.Token);
+            await Bus.PubSub.PublishAsync(new CreatedUser(userToDb));
+            await Bus.PubSub.PublishAsync(new CreatedToken(refreshToken));
             return Result<UserAuthenticatedDto>.Success(authenticatedDto);
         }
 
-        public async Task<Result<UserAuthenticatedDto>> LoginAsync(LoginDto login, string sessionId)
+        public async Task<Result<UserAuthenticatedDto>> LoginAsync(LoginDto login)
         {
-            var user = await _userRepository.GetByUserNameAsync(login.UserName);
+            var user = await _userRepository.GetAsync(u => u.UserName == login.UserName);
             if (user == null)
             {
                 throw Result<User>.Failure("userName", "Invalid userName", HttpStatusCode.BadRequest);
             }
 
-            user.SessionId = sessionId;
+            user.SessionId = Guid.NewGuid().ToString();
             var userDto = Mapper.Map<UserDto>(user);
 
             IsValid(userDto, login.Password);
-
-            await Bus.PubSub.PublishAsync(user);
 
             var jwtToken = GenerateJwtToken(userDto);
             var tokenString = GenerateRefreshToken();
@@ -92,23 +91,22 @@ namespace Warehouse.Api.Auth.Business
             };
 
             await _tokenRepository.CreateAsync(refreshToken);
+            await Bus.PubSub.PublishAsync(new UpdatedUser(user));
+            await Bus.PubSub.PublishAsync(new CreatedToken(refreshToken));
             UserAuthenticatedDto authenticatedDto = new(userDto, jwtToken, refreshToken.Token);
             return Result<UserAuthenticatedDto>.Success(authenticatedDto);
         }
 
-        public async Task<Result<UserAuthenticatedDto>> RefreshTokenAsync(string userId, TokenDto token,
-            string sessionId)
+        public async Task<Result<UserAuthenticatedDto>> RefreshTokenAsync(string userId, TokenDto token)
         {
-            var user = await _userRepository.GetAsync(userId);
-            user.SessionId = sessionId;
+            var user = await _userRepository.GetAsync(u => u.Id == userId);
+            user.SessionId = Guid.NewGuid().ToString();
             var userDto = Mapper.Map<UserDto>(user);
 
-            var refreshTokenInDb = await _tokenRepository.GetAsync(userId, token.Name);
+            var refreshTokenInDb = await _tokenRepository.GetAsync(t => t.User.Id == userId && t.Token == token.Name);
 
             CheckForNull(refreshTokenInDb);
             IsValid(refreshTokenInDb);
-
-            await Bus.PubSub.PublishAsync(user);
 
             var jwtToken = GenerateJwtToken(userDto);
             var tokenString = GenerateRefreshToken();
@@ -123,22 +121,33 @@ namespace Warehouse.Api.Auth.Business
             };
 
             await _tokenRepository.CreateAsync(refreshToken);
-            await _tokenRepository.DeleteAsync(refreshTokenInDb.Id);
+            await _tokenRepository.DeleteAsync(t => t.Id == refreshTokenInDb.Id);
+            await Bus.PubSub.PublishAsync(new UpdatedUser(user));
+            await Bus.PubSub.PublishAsync(new CreatedToken(refreshToken));
             UserAuthenticatedDto authenticatedDto = new(userDto, jwtToken, refreshToken.Token);
             return Result<UserAuthenticatedDto>.Success(authenticatedDto);
         }
 
         public async Task<Result<object>> LogoutAsync(string userId)
         {
-            var user = await _userRepository.GetAsync(userId);
+            var user = await _userRepository.GetAsync(u => u.Id == userId);
             if (user == null)
             {
                 throw Result<User>.Failure("id", "Invalid id");
             }
 
             user.SessionId = null;
-            await Bus.PubSub.PublishAsync(user);
+
+            var token = await _tokenRepository.GetAsync(t => t.User.Id == userId);
+            await _tokenRepository.DeleteAsync(t => t.Id == token.Id);
+            await Bus.PubSub.PublishAsync(new UpdatedUser(user));
+            await Bus.PubSub.PublishAsync(new DeletedToken(token.Id));
             return Result<object>.Success();
+        }
+
+        public async Task DeleteTokenAsync(RefreshToken refreshToken)
+        {
+            await _tokenRepository.DeleteAsync(t => t.Id == refreshToken.Id);
         }
 
         private void IsValid(UserDto user, string password)
@@ -152,14 +161,14 @@ namespace Warehouse.Api.Auth.Business
 
         private async Task IsValid(UserDto user)
         {
-            var userFromDb = await _userRepository.GetByUserNameAsync(user.UserName);
+            var userFromDb = await _userRepository.GetAsync(u => u.UserName == user.UserName);
             if (userFromDb is not null)
             {
                 throw Result<UserAuthenticatedDto>.Failure("userName", "User with such userName already exists",
                     HttpStatusCode.BadRequest);
             }
 
-            userFromDb = await _userRepository.GetByEmailAsync(user.Email);
+            userFromDb = await _userRepository.GetAsync(u => u.Email == user.Email);
 
             if (userFromDb is not null)
             {
