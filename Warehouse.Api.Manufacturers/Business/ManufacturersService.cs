@@ -15,6 +15,7 @@ using Warehouse.Core.DTO.Log;
 using Warehouse.Core.DTO.Manufacturer;
 using Warehouse.Core.Interfaces.Repositories;
 using Warehouse.Core.Interfaces.Services;
+using Warehouse.Core.Settings;
 using Warehouse.Core.Settings.CacheSettings;
 using Warehouse.Domain;
 using JsonSerializer = System.Text.Json.JsonSerializer;
@@ -27,9 +28,10 @@ namespace Warehouse.Api.Manufacturers.Business
         private readonly CacheManufacturerSettings _manufacturerSettings;
         private readonly IManufacturerRepository _manufacturerRepository;
 
-        public ManufacturerService(IOptions<CacheManufacturerSettings> manufacturerSettings,
+        public ManufacturerService(IOptions<CacheManufacturerSettings> manufacturerSettings, IBus bus,
             IManufacturerRepository manufacturerRepository, IDistributedCache distributedCache, IMapper mapper,
-            IBus bus, IFileService fileService) : base(mapper, distributedCache, bus, fileService)
+            IFileService fileService, IOptions<PollySettings> pollySettings) : base(mapper, bus, pollySettings.Value,
+            distributedCache, fileService)
         {
             _manufacturerSettings = manufacturerSettings.Value;
             _manufacturerRepository = manufacturerRepository;
@@ -37,7 +39,7 @@ namespace Warehouse.Api.Manufacturers.Business
 
         public async Task<Result<List<ManufacturerDto>>> GetAllAsync()
         {
-            var manufacturersInDb = await _manufacturerRepository.GetRangeAsync(m => true);
+            var manufacturersInDb = await DbPolicy.ExecuteAsync(() => _manufacturerRepository.GetRangeAsync(m => true));
             var manufacturers = Mapper.Map<List<ManufacturerDto>>(manufacturersInDb);
 
             return Result<List<ManufacturerDto>>.Success(manufacturers);
@@ -45,8 +47,9 @@ namespace Warehouse.Api.Manufacturers.Business
 
         public async Task<Result<PageDataDto<ManufacturerDto>>> GetPageAsync(int page, int pageSize)
         {
-            var manufacturersInDb = await _manufacturerRepository.GetPageAsync(page, pageSize);
-            var count = await _manufacturerRepository.GetCountAsync(_ => true);
+            var manufacturersInDb =
+                await DbPolicy.ExecuteAsync(() => _manufacturerRepository.GetPageAsync(page, pageSize));
+            var count = await DbPolicy.ExecuteAsync(() => _manufacturerRepository.GetCountAsync(_ => true));
             var manufacturers = Mapper.Map<List<ManufacturerDto>>(manufacturersInDb);
             PageDataDto<ManufacturerDto> pageData = new(manufacturers, count);
 
@@ -55,8 +58,8 @@ namespace Warehouse.Api.Manufacturers.Business
 
         public async Task<Result<List<ManufacturerDto>>> GetRangeAsync(IEnumerable<string> manufacturerIds)
         {
-            var manufacturersInDb =
-                await _manufacturerRepository.GetRangeAsync(m => manufacturerIds.Contains(m.Id));
+            var manufacturersInDb = await DbPolicy.ExecuteAsync(() =>
+                _manufacturerRepository.GetRangeAsync(m => manufacturerIds.Contains(m.Id)));
             var manufacturers = Mapper.Map<List<ManufacturerDto>>(manufacturersInDb);
 
             return Result<List<ManufacturerDto>>.Success(manufacturers);
@@ -65,7 +68,7 @@ namespace Warehouse.Api.Manufacturers.Business
         public async Task<Result<ManufacturerDto>> GetAsync(string id)
         {
             var cacheKey = $"Manufacturer-{id}";
-            var cache = await DistributedCache.GetStringAsync(cacheKey);
+            var cache = await CachingPolicy.ExecuteAsync(() => DistributedCache.GetStringAsync(cacheKey));
             ManufacturerDto manufacturer;
 
             if (cache.TryGetValue<Manufacturer>(out var cachedManufacturer))
@@ -75,10 +78,11 @@ namespace Warehouse.Api.Manufacturers.Business
                 return Result<ManufacturerDto>.Success(manufacturer);
             }
 
-            var manufacturerInDb = await _manufacturerRepository.GetAsync(m => m.Id == id);
+            var manufacturerInDb = await DbPolicy.ExecuteAsync(() => _manufacturerRepository.GetAsync(m => m.Id == id));
             if (manufacturerInDb is not null)
             {
-                await DistributedCache.SetCacheAsync(cacheKey, manufacturerInDb, _manufacturerSettings);
+                await CachingPolicy.ExecuteAsync(() =>
+                    DistributedCache.SetCacheAsync(cacheKey, manufacturerInDb, _manufacturerSettings));
                 manufacturer = Mapper.Map<ManufacturerDto>(manufacturerInDb);
 
                 return Result<ManufacturerDto>.Success(manufacturer);
@@ -102,12 +106,13 @@ namespace Warehouse.Api.Manufacturers.Business
                 new(Guid.NewGuid().ToString(), userName, "added manufacturer", JsonSerializer.Serialize(manufacturerDto,
                     JsonSerializerOptions), DateTime.UtcNow);
 
-            await DistributedCache.SetCacheAsync(cacheKey, manufacturerToDb, _manufacturerSettings);
+            await CachingPolicy.ExecuteAsync(() =>
+                DistributedCache.SetCacheAsync(cacheKey, manufacturerToDb, _manufacturerSettings));
             await FileService.WriteToFileAsync(manufacturerToDb, _path, cacheKey);
 
-            await _manufacturerRepository.CreateAsync(manufacturerToDb);
-            await Bus.PubSub.PublishAsync(new CreatedManufacturer(manufacturerToDb));
-            await Bus.PubSub.PublishAsync(log);
+            await DbPolicy.ExecuteAsync(() => _manufacturerRepository.CreateAsync(manufacturerToDb));
+            await RabbitPolicy.ExecuteAsync(() => Bus.PubSub.PublishAsync(new CreatedManufacturer(manufacturerToDb)));
+            await RabbitPolicy.ExecuteAsync(() => Bus.PubSub.PublishAsync(log));
             return Result<ManufacturerDto>.Success(manufacturerDto);
         }
 
@@ -116,10 +121,11 @@ namespace Warehouse.Api.Manufacturers.Business
         {
             var cacheKey = $"Manufacturer-{manufacturerId}";
             Manufacturer manufacturerInDb;
-            if (!await DistributedCache.IsExistsAsync(cacheKey))
+            if (!await CachingPolicy.ExecuteAsync(() => DistributedCache.IsExistsAsync(cacheKey)))
             {
-                manufacturerInDb = await _manufacturerRepository.GetAsync(m => m.Id == manufacturerId) ??
-                                   await FileService.ReadFromFileAsync<Manufacturer>(_path, cacheKey);
+                manufacturerInDb =
+                    await DbPolicy.ExecuteAsync(() => _manufacturerRepository.GetAsync(m => m.Id == manufacturerId)) ??
+                    await FileService.ReadFromFileAsync<Manufacturer>(_path, cacheKey);
                 CheckForNull(manufacturerInDb);
             }
 
@@ -130,10 +136,11 @@ namespace Warehouse.Api.Manufacturers.Business
                     manufacturerDto,
                     JsonSerializerOptions), DateTime.UtcNow);
 
-            await _manufacturerRepository.UpdateAsync(m => m.Id == manufacturerInDb.Id, manufacturerInDb);
-            await Bus.PubSub.PublishAsync(new UpdatedManufacturer(manufacturerInDb));
-            await Bus.PubSub.PublishAsync(log);
-            await DistributedCache.UpdateAsync(cacheKey, manufacturerInDb);
+            await DbPolicy.ExecuteAsync(() =>
+                _manufacturerRepository.UpdateAsync(m => m.Id == manufacturerInDb.Id, manufacturerInDb));
+            await RabbitPolicy.ExecuteAsync(() => Bus.PubSub.PublishAsync(new UpdatedManufacturer(manufacturerInDb)));
+            await RabbitPolicy.ExecuteAsync(() => Bus.PubSub.PublishAsync(log));
+            await CachingPolicy.ExecuteAsync(() => DistributedCache.UpdateAsync(cacheKey, manufacturerInDb));
             await FileService.WriteToFileAsync(manufacturerInDb, _path, cacheKey);
 
             return Result<ManufacturerDto>.Success(manufacturerDto);
@@ -142,17 +149,18 @@ namespace Warehouse.Api.Manufacturers.Business
         public async Task<Result<object>> DeleteAsync(string id)
         {
             var cacheKey = $"Manufacturer-{id}";
-            if (!await DistributedCache.IsExistsAsync(cacheKey))
+            if (!await CachingPolicy.ExecuteAsync(() => DistributedCache.IsExistsAsync(cacheKey)))
             {
-                var manufacturerInDb = await _manufacturerRepository.GetAsync(m => m.Id == id);
+                var manufacturerInDb =
+                    await DbPolicy.ExecuteAsync(() => _manufacturerRepository.GetAsync(m => m.Id == id));
                 CheckForNull(manufacturerInDb);
             }
 
-            await Bus.PubSub.PublishAsync(new DeletedManufacturer(id));
-            await _manufacturerRepository.DeleteAsync(m => m.Id == id);
+            await RabbitPolicy.ExecuteAsync(() => Bus.PubSub.PublishAsync(new DeletedManufacturer(id)));
+            await DbPolicy.ExecuteAsync(() => _manufacturerRepository.DeleteAsync(m => m.Id == id));
             await FileService.DeleteFileAsync(_path, cacheKey);
 
-            await DistributedCache.RemoveAsync(cacheKey);
+            await CachingPolicy.ExecuteAsync(() => DistributedCache.RemoveAsync(cacheKey));
 
             return Result<object>.Success();
         }

@@ -14,6 +14,7 @@ using Warehouse.Core.DTO.Customer;
 using Warehouse.Core.DTO.Log;
 using Warehouse.Core.Interfaces.Repositories;
 using Warehouse.Core.Interfaces.Services;
+using Warehouse.Core.Settings;
 using Warehouse.Core.Settings.CacheSettings;
 using Warehouse.Domain;
 using JsonSerializer = System.Text.Json.JsonSerializer;
@@ -27,8 +28,8 @@ namespace Warehouse.Api.Customers.Business
         private readonly ICustomerRepository _customerRepository;
 
         public CustomerService(IOptions<CacheCustomerSettings> customerSettings, ICustomerRepository customerRepository,
-            IDistributedCache distributedCache, IMapper mapper, IBus bus, IFileService fileService) :
-            base(mapper, distributedCache, bus, fileService)
+            IDistributedCache distributedCache, IMapper mapper, IBus bus, IOptions<PollySettings> pollySettings,
+            IFileService fileService) : base(mapper, bus, pollySettings.Value, distributedCache, fileService)
         {
             _customerSettings = customerSettings.Value;
             _customerRepository = customerRepository;
@@ -37,7 +38,7 @@ namespace Warehouse.Api.Customers.Business
 
         public async Task<Result<List<CustomerDto>>> GetAllAsync()
         {
-            var customersInDb = await _customerRepository.GetRangeAsync(_ => true);
+            var customersInDb = await DbPolicy.ExecuteAsync(() => _customerRepository.GetRangeAsync(_ => true));
             var customers = Mapper.Map<List<CustomerDto>>(customersInDb);
 
             return Result<List<CustomerDto>>.Success(customers);
@@ -45,8 +46,8 @@ namespace Warehouse.Api.Customers.Business
 
         public async Task<Result<PageDataDto<CustomerDto>>> GetPageAsync(int page, int pageSize)
         {
-            var customersInDb = await _customerRepository.GetPageAsync(page, pageSize);
-            var count = await _customerRepository.GetCountAsync(_ => true);
+            var customersInDb = await DbPolicy.ExecuteAsync(() => _customerRepository.GetPageAsync(page, pageSize));
+            var count = await DbPolicy.ExecuteAsync(() => _customerRepository.GetCountAsync(_ => true));
             var customers = Mapper.Map<List<CustomerDto>>(customersInDb);
             PageDataDto<CustomerDto> pageData = new(customers, count);
 
@@ -56,7 +57,7 @@ namespace Warehouse.Api.Customers.Business
         public async Task<Result<CustomerDto>> GetAsync(string id)
         {
             var cacheKey = $"Customer-{id}";
-            var cache = await DistributedCache.GetStringAsync(cacheKey);
+            var cache = await CachingPolicy.ExecuteAsync(() => DistributedCache.GetStringAsync(cacheKey));
             CustomerDto customer;
 
             if (cache.TryGetValue<Customer>(out var cachedCustomer))
@@ -66,10 +67,11 @@ namespace Warehouse.Api.Customers.Business
                 return Result<CustomerDto>.Success(customer);
             }
 
-            var customerInDb = await _customerRepository.GetAsync(c => c.Id == id);
+            var customerInDb = await DbPolicy.ExecuteAsync(() => _customerRepository.GetAsync(c => c.Id == id));
             if (customerInDb is not null)
             {
-                await DistributedCache.SetCacheAsync(cacheKey, customerInDb, _customerSettings);
+                await CachingPolicy.ExecuteAsync(() =>
+                    DistributedCache.SetCacheAsync(cacheKey, customerInDb, _customerSettings));
                 customer = Mapper.Map<CustomerDto>(customerInDb);
 
                 return Result<CustomerDto>.Success(customer);
@@ -86,16 +88,16 @@ namespace Warehouse.Api.Customers.Business
         public async Task<Result<object>> DeleteAsync(string id)
         {
             var cacheKey = $"Customer-{id}";
-            if (!await DistributedCache.IsExistsAsync(cacheKey))
+            if (!await CachingPolicy.ExecuteAsync(() => DistributedCache.IsExistsAsync(cacheKey)))
             {
-                var customerInDb = await _customerRepository.GetAsync(c => c.Id == id);
+                var customerInDb = await DbPolicy.ExecuteAsync(() => _customerRepository.GetAsync(c => c.Id == id));
                 CheckForNull(customerInDb);
             }
 
-            await Bus.PubSub.PublishAsync(new DeletedCustomer(id));
-            await DistributedCache.RemoveAsync(cacheKey);
+            await RabbitPolicy.ExecuteAsync(() => Bus.PubSub.PublishAsync(new DeletedCustomer(id)));
+            await CachingPolicy.ExecuteAsync(() => DistributedCache.RemoveAsync(cacheKey));
             await FileService.DeleteFileAsync(_path, cacheKey);
-            await _customerRepository.DeleteAsync(c => c.Id == id);
+            await DbPolicy.ExecuteAsync(() => _customerRepository.DeleteAsync(c => c.Id == id));
 
             return Result<object>.Success();
         }
@@ -109,12 +111,13 @@ namespace Warehouse.Api.Customers.Business
                 new(Guid.NewGuid().ToString(), userName, "added customer", JsonSerializer.Serialize(customerToDb,
                     JsonSerializerOptions), DateTime.UtcNow);
 
-            await DistributedCache.SetCacheAsync(cacheKey, customerToDb, _customerSettings);
+            await CachingPolicy.ExecuteAsync(() =>
+                DistributedCache.SetCacheAsync(cacheKey, customerToDb, _customerSettings));
             await FileService.WriteToFileAsync(customerToDb, _path, cacheKey);
 
-            await _customerRepository.CreateAsync(customerToDb);
-            await Bus.PubSub.PublishAsync(new CreatedCustomer(customerToDb));
-            await Bus.PubSub.PublishAsync(log);
+            await DbPolicy.ExecuteAsync(() => _customerRepository.CreateAsync(customerToDb));
+            await RabbitPolicy.ExecuteAsync(() => Bus.PubSub.PublishAsync(new CreatedCustomer(customerToDb)));
+            await RabbitPolicy.ExecuteAsync(() => Bus.PubSub.PublishAsync(log));
             return Result<CustomerDto>.Success(customer with {Id = customerToDb.Id});
         }
     }

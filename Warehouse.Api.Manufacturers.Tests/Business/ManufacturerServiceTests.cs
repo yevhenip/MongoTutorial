@@ -13,6 +13,7 @@ using Warehouse.Core.DTO;
 using Warehouse.Core.DTO.Manufacturer;
 using Warehouse.Core.Interfaces.Repositories;
 using Warehouse.Core.Interfaces.Services;
+using Warehouse.Core.Settings;
 using Warehouse.Core.Settings.CacheSettings;
 using Warehouse.Domain;
 
@@ -27,6 +28,7 @@ namespace Warehouse.Api.Manufacturers.Tests.Business
         private readonly Manufacturer _dbManufacturer = new() {Address = "a", Id = "a", Name = "a"};
         private readonly Mock<IManufacturerRepository> _manufacturerRepository = new();
         private readonly Mock<IOptions<CacheManufacturerSettings>> _options = new();
+        private readonly Mock<IOptions<PollySettings>> _pollyOptions = new();
         private readonly Mock<IFileService> _fileService = new();
         private readonly Mock<IDistributedCache> _cache = new();
         private readonly Mock<IMapper> _mapper = new();
@@ -37,8 +39,9 @@ namespace Warehouse.Api.Manufacturers.Tests.Business
         {
             _options.Setup(opt => opt.Value).Returns(new CacheManufacturerSettings
                 {AbsoluteExpiration = 1, SlidingExpiration = 1});
-            _manufacturerService = new(_options.Object, _manufacturerRepository.Object, _cache.Object, _mapper.Object,
-                _bus.Object, _fileService.Object);
+            _pollyOptions.Setup(opt => opt.Value).Returns(new PollySettings {RepeatedTimes = 2, RepeatedDelay = 3});
+            _manufacturerService = new(_options.Object, _bus.Object, _manufacturerRepository.Object, _cache.Object, 
+                _mapper.Object, _fileService.Object, _pollyOptions.Object);
         }
 
         [Test]

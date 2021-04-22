@@ -63,7 +63,7 @@ namespace Warehouse.Api
 
             services.AddSingleton<IMongoClient, MongoClient>(_ =>
                 new MongoClient(Configuration["Data:ConnectionString"]));
-            
+
             services.AddScoped<ValidateTokenSessionId>();
             services.AddScoped<IFileService, FileService>();
             services.AddScoped<IUserRepository, UserRepository>();
@@ -72,6 +72,7 @@ namespace Warehouse.Api
             services.Configure<CacheManufacturerSettings>(Configuration.GetSection("Cache:CacheOptions:Manufacturer"));
             services.Configure<CacheUserSettings>(Configuration.GetSection("Cache:CacheOptions:User"));
             services.Configure<CacheCustomerSettings>(Configuration.GetSection("Cache:CacheOptions:Customer"));
+            services.Configure<PollySettings>(Configuration.GetSection("Polly"));
 
             services.AddJwtBearerAuthentication(Configuration);
 

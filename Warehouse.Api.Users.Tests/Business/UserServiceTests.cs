@@ -13,6 +13,7 @@ using Warehouse.Core.DTO;
 using Warehouse.Core.DTO.Users;
 using Warehouse.Core.Interfaces.Repositories;
 using Warehouse.Core.Interfaces.Services;
+using Warehouse.Core.Settings;
 using Warehouse.Core.Settings.CacheSettings;
 using Warehouse.Domain;
 using JsonSerializer = System.Text.Json.JsonSerializer;
@@ -31,6 +32,7 @@ namespace Warehouse.Api.Users.Tests.Business
         };
 
         private readonly Mock<IRefreshTokenRepository> _refreshTokenRepository = new();
+        private readonly Mock<IOptions<PollySettings>> _pollyOptions = new();
         private readonly Mock<IOptions<CacheUserSettings>> _options = new();
         private readonly Mock<IUserRepository> _userRepository = new();
         private readonly Mock<IFileService> _fileService = new();
@@ -45,8 +47,9 @@ namespace Warehouse.Api.Users.Tests.Business
         {
             _options.Setup(opt => opt.Value).Returns(new CacheUserSettings
                 {AbsoluteExpiration = 1, SlidingExpiration = 1});
-            _userService = new(_refreshTokenRepository.Object, _userRepository.Object, _options.Object,
-                _cache.Object, _mapper.Object, _fileService.Object, _bus.Object);
+            _pollyOptions.Setup(opt => opt.Value).Returns(new PollySettings {RepeatedTimes = 2, RepeatedDelay = 3});
+            _userService = new(_refreshTokenRepository.Object, _userRepository.Object, _bus.Object, _options.Object,
+                _cache.Object, _mapper.Object, _fileService.Object, _pollyOptions.Object);
         }
 
         [SetUp]

@@ -3,12 +3,14 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using AutoMapper;
 using EasyNetQ;
+using Microsoft.Extensions.Options;
 using Moq;
 using NUnit.Framework;
 using Warehouse.Api.Logs.Business;
 using Warehouse.Core.Common;
 using Warehouse.Core.DTO.Log;
 using Warehouse.Core.Interfaces.Repositories;
+using Warehouse.Core.Settings;
 using Warehouse.Domain;
 
 namespace Warehouse.Api.Logs.Tests.Business
@@ -23,6 +25,7 @@ namespace Warehouse.Api.Logs.Tests.Business
         private readonly Log _dbLog = new()
             {Id = "a", Action = "a", UserName = "a", SerializedData = "a", ActionDate = DateTime.Now};
 
+        private readonly Mock<IOptions<PollySettings>> _pollyOptions = new();
         private readonly Mock<ILogRepository> _logRepository = new();
         private readonly Mock<IMapper> _mapper = new();
         private readonly Mock<IBus> _bus = new();
@@ -30,7 +33,8 @@ namespace Warehouse.Api.Logs.Tests.Business
         [OneTimeSetUp]
         public void SetUpOnce()
         {
-            _logService = new(_logRepository.Object, _mapper.Object, _bus.Object);
+            _pollyOptions.Setup(opt => opt.Value).Returns(new PollySettings {RepeatedTimes = 2, RepeatedDelay = 3});
+            _logService = new(_logRepository.Object, _mapper.Object, _bus.Object, _pollyOptions.Object);
         }
 
         [Test]

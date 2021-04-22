@@ -7,7 +7,6 @@ using System.Threading.Tasks;
 using AutoMapper;
 using EasyNetQ;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Options;
 using Moq;
 using NUnit.Framework;
@@ -35,6 +34,7 @@ namespace Warehouse.Api.Auth.Tests.Business
 
         private readonly Mock<IRefreshTokenRepository> _tokenRepository = new();
         private readonly Mock<IOptions<JwtTokenConfiguration>> _options = new();
+        private readonly Mock<IOptions<PollySettings>> _pollyOptions = new();
         private readonly Mock<IPasswordHasher<UserDto>> _hasher = new();
         private readonly Mock<IUserRepository> _userRepository = new();
         private readonly Mock<IMapper> _mapper = new();
@@ -44,16 +44,17 @@ namespace Warehouse.Api.Auth.Tests.Business
         [OneTimeSetUp]
         public void SetUpOnce()
         {
-            Mock<IDistributedCache> cache = new();
             Mock<IBus> bus = new();
             _options.Setup(opt => opt.Value).Returns(new JwtTokenConfiguration
             {
                 Audience = "Test", Issuer = "Test", Secret = ":-)TestTestTestTestTestTestTestTest(-:",
                 AccessTokenExpirationMinutes = 10, RefreshTokenExpirationMinutes = 10
             });
-
-            _authService = new AuthService(_options.Object, _tokenRepository.Object, cache.Object, _mapper.Object,
-                _userRepository.Object, bus.Object, _hasher.Object);
+            
+            _pollyOptions.Setup(opt => opt.Value).Returns(new PollySettings {RepeatedTimes = 2, RepeatedDelay = 3});
+            
+            _authService = new AuthService(_options.Object, _tokenRepository.Object, _mapper.Object,
+                _userRepository.Object, bus.Object, _hasher.Object, _pollyOptions.Object);
         }
 
         [SetUp]

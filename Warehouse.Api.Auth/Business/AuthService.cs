@@ -10,7 +10,6 @@ using System.Threading.Tasks;
 using AutoMapper;
 using EasyNetQ;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Warehouse.Api.Business;
@@ -32,8 +31,8 @@ namespace Warehouse.Api.Auth.Business
         private readonly IPasswordHasher<UserDto> _hasher;
 
         public AuthService(IOptions<JwtTokenConfiguration> tokenConfiguration, IRefreshTokenRepository tokenRepository,
-            IDistributedCache distributedCache, IMapper mapper, IUserRepository userRepository, IBus bus,
-            IPasswordHasher<UserDto> hasher) : base(mapper, distributedCache, bus)
+            IMapper mapper, IUserRepository userRepository, IBus bus, IPasswordHasher<UserDto> hasher,
+            IOptions<PollySettings> pollySettings) : base(mapper, bus, pollySettings.Value)
         {
             _tokenConfiguration = tokenConfiguration.Value;
             _userRepository = userRepository;
@@ -59,16 +58,17 @@ namespace Warehouse.Api.Auth.Business
                 User = userToDb
             };
 
-            await _tokenRepository.CreateAsync(refreshToken);
+            await DbPolicy.ExecuteAsync(() => _tokenRepository.CreateAsync(refreshToken));
             UserAuthenticatedDto authenticatedDto = new(user, jwtToken, refreshToken.Token);
-            await Bus.PubSub.PublishAsync(new CreatedUser(userToDb));
-            await Bus.PubSub.PublishAsync(new CreatedToken(refreshToken));
+            await RabbitPolicy.ExecuteAsync(() => Bus.PubSub.PublishAsync(new CreatedUser(userToDb)));
+            await RabbitPolicy.ExecuteAsync(() => Bus.PubSub.PublishAsync(new CreatedToken(refreshToken)));
             return Result<UserAuthenticatedDto>.Success(authenticatedDto);
         }
 
         public async Task<Result<UserAuthenticatedDto>> LoginAsync(LoginDto login)
         {
-            var user = await _userRepository.GetAsync(u => u.UserName == login.UserName);
+            var user = await DbPolicy.ExecuteAsync(() => _userRepository.GetAsync(u => u.UserName == login.UserName));
+
             if (user == null)
             {
                 throw Result<User>.Failure("userName", "Invalid userName", HttpStatusCode.BadRequest);
@@ -90,20 +90,21 @@ namespace Warehouse.Api.Auth.Business
                 User = user
             };
 
-            await _tokenRepository.CreateAsync(refreshToken);
-            await Bus.PubSub.PublishAsync(new UpdatedUser(user));
-            await Bus.PubSub.PublishAsync(new CreatedToken(refreshToken));
+            await DbPolicy.ExecuteAsync(() => _tokenRepository.CreateAsync(refreshToken));
+            await RabbitPolicy.ExecuteAsync(() => Bus.PubSub.PublishAsync(new UpdatedUser(user)));
+            await RabbitPolicy.ExecuteAsync(() => Bus.PubSub.PublishAsync(new CreatedToken(refreshToken)));
             UserAuthenticatedDto authenticatedDto = new(userDto, jwtToken, refreshToken.Token);
             return Result<UserAuthenticatedDto>.Success(authenticatedDto);
         }
 
         public async Task<Result<UserAuthenticatedDto>> RefreshTokenAsync(string userId, TokenDto token)
         {
-            var user = await _userRepository.GetAsync(u => u.Id == userId);
+            var user = await DbPolicy.ExecuteAsync(() => _userRepository.GetAsync(u => u.Id == userId));
             user.SessionId = Guid.NewGuid().ToString();
             var userDto = Mapper.Map<UserDto>(user);
 
-            var refreshTokenInDb = await _tokenRepository.GetAsync(t => t.User.Id == userId && t.Token == token.Name);
+            var refreshTokenInDb = await DbPolicy.ExecuteAsync(() =>
+                _tokenRepository.GetAsync(t => t.User.Id == userId && t.Token == token.Name));
 
             CheckForNull(refreshTokenInDb);
             IsValid(refreshTokenInDb);
@@ -120,17 +121,17 @@ namespace Warehouse.Api.Auth.Business
                 User = userInDb
             };
 
-            await _tokenRepository.CreateAsync(refreshToken);
-            await _tokenRepository.DeleteAsync(t => t.Id == refreshTokenInDb.Id);
-            await Bus.PubSub.PublishAsync(new UpdatedUser(user));
-            await Bus.PubSub.PublishAsync(new CreatedToken(refreshToken));
+            await DbPolicy.ExecuteAsync(() => _tokenRepository.CreateAsync(refreshToken));
+            await DbPolicy.ExecuteAsync(() => _tokenRepository.DeleteAsync(t => t.Id == refreshTokenInDb.Id));
+            await RabbitPolicy.ExecuteAsync(() => Bus.PubSub.PublishAsync(new UpdatedUser(user)));
+            await RabbitPolicy.ExecuteAsync(() => Bus.PubSub.PublishAsync(new CreatedToken(refreshToken)));
             UserAuthenticatedDto authenticatedDto = new(userDto, jwtToken, refreshToken.Token);
             return Result<UserAuthenticatedDto>.Success(authenticatedDto);
         }
 
         public async Task<Result<object>> LogoutAsync(string userId)
         {
-            var user = await _userRepository.GetAsync(u => u.Id == userId);
+            var user = await DbPolicy.ExecuteAsync(() => _userRepository.GetAsync(u => u.Id == userId));
             if (user == null)
             {
                 throw Result<User>.Failure("id", "Invalid id");
@@ -138,16 +139,16 @@ namespace Warehouse.Api.Auth.Business
 
             user.SessionId = null;
 
-            var token = await _tokenRepository.GetAsync(t => t.User.Id == userId);
-            await _tokenRepository.DeleteAsync(t => t.Id == token.Id);
-            await Bus.PubSub.PublishAsync(new UpdatedUser(user));
-            await Bus.PubSub.PublishAsync(new DeletedToken(token.Id));
+            var token = await DbPolicy.ExecuteAsync(() => _tokenRepository.GetAsync(t => t.User.Id == userId));
+            await DbPolicy.ExecuteAsync(() => _tokenRepository.DeleteAsync(t => t.Id == token.Id));
+            await RabbitPolicy.ExecuteAsync(() => Bus.PubSub.PublishAsync(new UpdatedUser(user)));
+            await RabbitPolicy.ExecuteAsync(() => Bus.PubSub.PublishAsync(new DeletedToken(token.Id)));
             return Result<object>.Success();
         }
 
         public async Task DeleteTokenAsync(RefreshToken refreshToken)
         {
-            await _tokenRepository.DeleteAsync(t => t.Id == refreshToken.Id);
+            await DbPolicy.ExecuteAsync(() => _tokenRepository.DeleteAsync(t => t.Id == refreshToken.Id));
         }
 
         private void IsValid(UserDto user, string password)
@@ -161,14 +162,15 @@ namespace Warehouse.Api.Auth.Business
 
         private async Task IsValid(UserDto user)
         {
-            var userFromDb = await _userRepository.GetAsync(u => u.UserName == user.UserName);
+            var userFromDb =
+                await DbPolicy.ExecuteAsync(() => _userRepository.GetAsync(u => u.UserName == user.UserName));
             if (userFromDb is not null)
             {
                 throw Result<UserAuthenticatedDto>.Failure("userName", "User with such userName already exists",
                     HttpStatusCode.BadRequest);
             }
 
-            userFromDb = await _userRepository.GetAsync(u => u.Email == user.Email);
+            userFromDb = await DbPolicy.ExecuteAsync(() => _userRepository.GetAsync(u => u.Email == user.Email));
 
             if (userFromDb is not null)
             {

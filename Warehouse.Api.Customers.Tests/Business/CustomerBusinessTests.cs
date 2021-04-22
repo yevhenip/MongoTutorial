@@ -12,6 +12,7 @@ using Warehouse.Core.DTO;
 using Warehouse.Core.DTO.Customer;
 using Warehouse.Core.Interfaces.Repositories;
 using Warehouse.Core.Interfaces.Services;
+using Warehouse.Core.Settings;
 using Warehouse.Core.Settings.CacheSettings;
 using Warehouse.Domain;
 
@@ -26,6 +27,7 @@ namespace Warehouse.Api.Customers.Tests.Business
         private readonly Customer _dbCustomer = new() {Email = "a", Id = "a", FullName = "a", Phone = "a"};
         private readonly Mock<ICustomerRepository> _customerRepository = new();
         private readonly Mock<IOptions<CacheCustomerSettings>> _options = new();
+        private readonly Mock<IOptions<PollySettings>> _pollyOptions = new();
         private readonly Mock<IFileService> _fileService = new();
         private readonly Mock<IDistributedCache> _cache = new();
         private readonly Mock<IMapper> _mapper = new();
@@ -36,8 +38,9 @@ namespace Warehouse.Api.Customers.Tests.Business
         {
             _options.Setup(opt => opt.Value).Returns(new CacheCustomerSettings
                 {AbsoluteExpiration = 1, SlidingExpiration = 1});
+            _pollyOptions.Setup(opt => opt.Value).Returns(new PollySettings {RepeatedTimes = 2, RepeatedDelay = 3});
             _customerService = new(_options.Object, _customerRepository.Object, _cache.Object, _mapper.Object,
-                _bus.Object, _fileService.Object);
+                _bus.Object, _pollyOptions.Object, _fileService.Object);
         }
 
         [Test]
