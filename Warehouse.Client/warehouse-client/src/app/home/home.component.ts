@@ -21,6 +21,8 @@ import {Log} from '../models/log';
 })
 export class HomeComponent extends DataPanel implements OnInit {
 
+  fileName = '';
+
   constructor(private productService: ProductService, public authService: AuthService, public dialog: MatDialog,
               private jwtService: JwtHelperService, logService: LogService) {
     super(productService, logService);
@@ -46,5 +48,25 @@ export class HomeComponent extends DataPanel implements OnInit {
   async export() {
     let file = await this.productService.getFileForExport();
     exportFile(file, 'products');
+  }
+
+  async onFileSelected(event: any) {
+    const file: File = event.target.files[0];
+    if (file) {
+
+      this.fileName = file.name;
+
+      const formData = new FormData();
+      formData.append("file", file);
+
+      let response = await this.productService.import(formData);
+      if (response.error) {
+        let message = response.error.text ? response.error.text : response.error.errors[Object.keys(response.error.errors)[0]];
+        let errors = document.getElementById('errors');
+        // @ts-ignore
+        errors?.innerText = "";
+        errors?.append(message);
+      }
+    }
   }
 }

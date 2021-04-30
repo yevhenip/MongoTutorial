@@ -9,7 +9,8 @@ import {MatNativeDateModule} from "@angular/material/core";
 import {MatSelectModule} from "@angular/material/select";
 import {MatTabsModule} from "@angular/material/tabs";
 import {MatPaginatorModule} from "@angular/material/paginator";
-
+import {MatIconModule} from '@angular/material/icon';
+import {MatProgressBarModule} from '@angular/material/progress-bar';
 
 @NgModule({
   declarations: [],
@@ -24,7 +25,9 @@ import {MatPaginatorModule} from "@angular/material/paginator";
     MatSelectModule,
     MatSelectModule,
     MatTabsModule,
-    MatPaginatorModule
+    MatPaginatorModule,
+    MatIconModule,
+    MatProgressBarModule
   ]
 })
 export class MdComponentsModule {

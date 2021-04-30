@@ -6,5 +6,5 @@ export interface User {
   email : string,
   phone : string,
   registrationDateTime : Date,
-  roles: []
+  roles: string[]
 }

@@ -1,16 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Security.Claims;
+using System.Threading;
 using System.Threading.Tasks;
+using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
 using NUnit.Framework;
+using Warehouse.Api.Common;
+using Warehouse.Api.Users.Commands;
 using Warehouse.Api.Users.Controllers.v1;
-using Warehouse.Core.Common;
 using Warehouse.Core.DTO;
 using Warehouse.Core.DTO.Users;
-using Warehouse.Core.Interfaces.Services;
 
 namespace Warehouse.Api.Users.Tests.Controllers
 {
@@ -18,14 +20,14 @@ namespace Warehouse.Api.Users.Tests.Controllers
     public class UsersControllerTests
     {
         private UserDto _user;
-        private readonly Mock<IUserService> _userService = new();
+        private readonly Mock<IMediator> _mediator = new();
 
         private UsersController _usersController;
 
         [OneTimeSetUp]
         public void SetUpOnce()
         {
-            _usersController = new(_userService.Object);
+            _usersController = new(_mediator.Object);
         }
 
         [SetUp]
@@ -35,64 +37,52 @@ namespace Warehouse.Api.Users.Tests.Controllers
         }
 
         [Test]
-        public async Task GetAllAsync_WhenCalled_ReturnsListOfUsers()
-        {
-            List<UserDto> users = new(){_user};
-            _userService.Setup(us => us.GetAllAsync())
-                .ReturnsAsync(Result<List<UserDto>>.Success(users));
-
-            var result = await _usersController.GetAllAsync() as OkObjectResult;
-
-            Assert.That(result?.Value, Is.EqualTo(users));
-        }
-        
-        [Test]
         public async Task GetAsync_WhenCalled_ReturnsUser()
         {
-            _userService.Setup(us => us.GetAsync(_user.Id))
+            _mediator.Setup(m => m.Send(new GetUserCommand(_user.Id), CancellationToken.None))
                 .ReturnsAsync(Result<UserDto>.Success(_user));
 
             var result = await _usersController.GetAsync(_user.Id) as OkObjectResult;
 
             Assert.That(result?.Value, Is.EqualTo(_user));
         }
-        
+
         [Test]
         public async Task UpdateAsync_WhenCalled_ReturnsUser()
         {
             ConfigureUser();
             UserModelDto userDto = new("a", "a", "a", "a");
-            _userService.Setup(us => us.UpdateAsync(_user.Id, userDto, "a"))
+            _mediator.Setup(m => m.Send(new UpdateUserCommand(_user.Id, userDto, "a"), CancellationToken.None))
                 .ReturnsAsync(Result<UserDto>.Success(_user));
 
             var result = await _usersController.UpdateAsync(_user.Id, userDto) as OkObjectResult;
 
             Assert.That(result?.Value, Is.EqualTo(_user));
         }
-        
+
         [Test]
         public async Task DeleteAsync_WhenCalled_ReturnsUser()
         {
-            _userService.Setup(us => us.DeleteAsync(_user.Id))
+            _mediator.Setup(m => m.Send(new DeleteUserCommand(_user.Id), CancellationToken.None))
                 .ReturnsAsync(Result<object>.Success());
 
             var result = await _usersController.DeleteAsync(_user.Id) as OkObjectResult;
 
             Assert.That(result?.Value, Is.EqualTo(null));
         }
-        
+
         [Test]
         public async Task GetPageAsync_WhenCalled_ReturnsPageDataDtoOfUserDto()
         {
             PageDataDto<UserDto> page = new(new List<UserDto>(), 3);
-            _userService.Setup(us => us.GetPageAsync(1, 1))
+            _mediator.Setup(m => m.Send(new GetUsersPageCommand(1, 1), CancellationToken.None))
                 .ReturnsAsync(Result<PageDataDto<UserDto>>.Success(page));
 
             var result = await _usersController.GetPageAsync(1, 1) as OkObjectResult;
 
             Assert.That(result?.Value, Is.EqualTo(page));
         }
-        
+
         private void ConfigureUser()
         {
             ClaimsPrincipal user = new(new ClaimsIdentity(new Claim[]

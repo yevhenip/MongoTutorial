@@ -8,10 +8,6 @@ namespace Warehouse.Api.Extensions
 {
     public static class ExceptionMiddlewareExtensions
     {
-        /// <summary>
-        /// Registers custom exception middleware in middleware pipeline
-        /// </summary>
-        /// <param name="app"></param>
         public static void UseMyExceptionHandler(this IApplicationBuilder app)
         {
             app.UseExceptionHandler(appError =>

@@ -1,9 +1,9 @@
-﻿using Microsoft.AspNetCore.Hosting;
+﻿using MediatR;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
-using Warehouse.Api.Manufacturers.Business;
 using Warehouse.Api.Manufacturers.Data;
 using Warehouse.Core.Interfaces.Repositories;
-using Warehouse.Core.Interfaces.Services;
+using StartupBase = Warehouse.Api.Base.StartupBase;
 
 namespace Warehouse.Api.Manufacturers
 {
@@ -17,7 +17,7 @@ namespace Warehouse.Api.Manufacturers
         {
             base.ConfigureServices(services);
             services.AddScoped<IManufacturerRepository, ManufacturerRepository>();
-            services.AddScoped<IManufacturerService, ManufacturerService>();
+            services.AddMediatR(typeof(Startup).Assembly);
         }
     }
 }

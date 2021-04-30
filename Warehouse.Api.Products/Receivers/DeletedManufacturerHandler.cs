@@ -1,23 +1,22 @@
 using System.Threading;
 using System.Threading.Tasks;
 using EasyNetQ.AutoSubscribe;
+using MediatR;
+using Warehouse.Api.Base;
+using Warehouse.Api.Products.Commands;
 using Warehouse.Core.DTO.Manufacturer;
-using Warehouse.Core.Interfaces.Services;
 
 namespace Warehouse.Api.Products.Receivers
 {
-    public class DeletedManufacturerHandler : IConsumeAsync<DeletedManufacturer>
+    public class DeletedManufacturerHandler : ReceiverBase, IConsumeAsync<DeletedManufacturer>
     {
-        private readonly IProductService _productService;
-
-        public DeletedManufacturerHandler(IProductService productService)
+        public DeletedManufacturerHandler(IMediator mediator) : base(mediator)
         {
-            _productService = productService;
         }
 
         public async Task ConsumeAsync(DeletedManufacturer message, CancellationToken cancellationToken = new())
         {
-            await _productService.DeleteManufacturerFromProductAsync(message);
+            await Mediator.Send(new DeleteManufacturerFromProductCommand(message.Id), cancellationToken);
         }
     }
 }

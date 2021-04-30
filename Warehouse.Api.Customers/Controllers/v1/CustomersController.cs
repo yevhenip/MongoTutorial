@@ -1,74 +1,54 @@
 ﻿using System.Threading.Tasks;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Warehouse.Api.Controllers.v1;
+using Warehouse.Api.Base;
+using Warehouse.Api.Customers.Commands;
 using Warehouse.Core.DTO.Customer;
-using Warehouse.Core.Interfaces.Services;
 
 namespace Warehouse.Api.Customers.Controllers.v1
 {
     [Authorize]
     public class CustomersController : ApiControllerBase
     {
-        private readonly ICustomerService _customerService;
-
-        public CustomersController(ICustomerService customerService)
+        public CustomersController(IMediator mediator) : base(mediator)
         {
-            _customerService = customerService;
         }
 
-        /// <summary>
-        /// Gets all customers
-        /// </summary>
-        /// <returns>List of customers</returns>
         [HttpGet]
         public async Task<IActionResult> GetAllAsync()
         {
-            var result = await _customerService.GetAllAsync();
+            var result = await Mediator.Send(new GetCustomersCommand(_ => true));
             return Ok(result.Data);
         }
 
-        /// <summary>
-        /// Gets customer based on provided id
-        /// </summary>
-        /// <param name="customerId"></param>
-        /// <returns>Customer</returns>
         [HttpGet("{customerId:guid}")]
         public async Task<IActionResult> GetAsync([FromRoute] string customerId)
         {
-            var result = await _customerService.GetAsync(customerId);
+            var result = await Mediator.Send(new GetCustomerCommand(customerId));
             return Ok(result.Data);
         }
 
         [HttpGet("{page:int}/{pageSize:int}")]
         public async Task<IActionResult> GetPageAsync([FromRoute] int page, [FromRoute] int pageSize)
         {
-            var result = await _customerService.GetPageAsync(page, pageSize);
+            var result = await Mediator.Send(new GetCustomerPageCommand(page, pageSize));
             return Ok(result.Data);
         }
 
-        /// <summary>
-        /// Creates customer
-        /// </summary>
-        /// <param name="customer"></param>
-        /// <returns>Created customer</returns>
         [Authorize(Roles = "Admin")]
         [HttpPost]
         public async Task<IActionResult> CreateAsync([FromBody] CustomerDto customer)
         {
-            var result = await _customerService.CreateAsync(customer, UserName);
+            var result = await Mediator.Send(new CreateCustomerCommand(customer, UserName));
             return Ok(result.Data);
         }
 
-        /// <summary>
-        /// Deletes customer
-        /// </summary>
-        /// <param name="customerId"></param>
         [Authorize(Roles = "Admin")]
         [HttpDelete("{customerId:guid}")]
         public async Task<IActionResult> DeleteAsync([FromRoute] string customerId)
         {
-            var result = await _customerService.DeleteAsync(customerId);
+            var result = await Mediator.Send(new DeleteCustomerCommand(customerId));
             return Ok(result.Data);
         }
     }

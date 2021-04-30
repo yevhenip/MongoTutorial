@@ -6,6 +6,21 @@
       </button>
       <button class="mb-3" mat-raised-button (click)="export()" *ngIf="authService.isAdmin()">Export products</button>
     </div>
+    <mat-label>Choose file</mat-label>
+    <input type="file" class="file-input" id="file"
+           (change)="onFileSelected($event)" #fileUpload>
+
+    <div class="file-upload">
+
+      {{fileName || "No file uploaded yet."}}
+
+      <button mat-mini-fab color="primary" class="upload-btn"
+              (click)="fileUpload.click()">
+        <mat-icon>attach_file</mat-icon>
+      </button>
+    </div>
+    <div id="errors" class="text-danger">
+    </div>
     <mat-form-field>
       <mat-label>Filter</mat-label>
       <label>

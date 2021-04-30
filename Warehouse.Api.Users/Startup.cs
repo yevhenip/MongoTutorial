@@ -1,11 +1,11 @@
 using System.Reflection;
+using MediatR;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
-using Warehouse.Api.Users.Business;
 using Warehouse.Api.Users.Data;
 using Warehouse.Api.Users.Receivers;
 using Warehouse.Core.Interfaces.Repositories;
-using Warehouse.Core.Interfaces.Services;
+using StartupBase = Warehouse.Api.Base.StartupBase;
 
 namespace Warehouse.Api.Users
 {
@@ -21,9 +21,9 @@ namespace Warehouse.Api.Users
             services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
             services.AddScoped<DeletedRefreshTokenHandler>();
             services.AddScoped<CreatedRefreshTokenHandler>();
-            services.AddScoped<IUserService, UserService>();
             services.AddScoped<CreatedUserHandler>();
             services.AddScoped<UpdatedUserHandler>();
+            services.AddMediatR(typeof(Startup).Assembly);
         }
 
         protected override Assembly GetEventHandlerAssemblies()

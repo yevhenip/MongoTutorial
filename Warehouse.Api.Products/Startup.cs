@@ -1,11 +1,13 @@
 using System.Reflection;
+using MediatR;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
-using Warehouse.Api.Products.Business;
 using Warehouse.Api.Products.Data;
 using Warehouse.Api.Products.Receivers;
+using Warehouse.Api.Products.Services;
 using Warehouse.Core.Interfaces.Repositories;
 using Warehouse.Core.Interfaces.Services;
+using StartupBase = Warehouse.Api.Base.StartupBase;
 
 namespace Warehouse.Api.Products
 {
@@ -27,6 +29,7 @@ namespace Warehouse.Api.Products
             services.AddScoped<UpdatedManufacturerHandler>();
             services.AddScoped<CreatedCustomerHandler>();
             services.AddScoped<DeletedCustomerHandler>();
+            services.AddMediatR(typeof(Startup).Assembly);
         }
 
         protected override Assembly GetEventHandlerAssemblies()

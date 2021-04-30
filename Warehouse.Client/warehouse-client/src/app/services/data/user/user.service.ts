@@ -10,4 +10,8 @@ export class UserService extends DataService {
   constructor(http: HttpClient) {
     super(http, environment.userApi);
   }
+
+  makeAdmin(id: string){
+    return this.http.post(this.url + id, undefined, this.options).toPromise();
+  }
 }

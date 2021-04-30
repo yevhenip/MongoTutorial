@@ -1,16 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Security.Claims;
+using System.Threading;
 using System.Threading.Tasks;
+using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
 using NUnit.Framework;
+using Warehouse.Api.Auth.Commands;
 using Warehouse.Api.Auth.Controllers.v1;
-using Warehouse.Core.Common;
+using Warehouse.Api.Common;
 using Warehouse.Core.DTO.Auth;
 using Warehouse.Core.DTO.Users;
-using Warehouse.Core.Interfaces.Services;
 
 namespace Warehouse.Api.Auth.Tests.Controllers
 {
@@ -18,14 +20,14 @@ namespace Warehouse.Api.Auth.Tests.Controllers
     public class AuthControllerTests
     {
         private UserDto _user;
-        private readonly Mock<IAuthService> _authService = new();
+        private readonly Mock<IMediator> _mediator = new();
 
         private AuthController _authController;
 
         [OneTimeSetUp]
         public void SetUpOnce()
         {
-            _authController = new(_authService.Object);
+            _authController = new(_mediator.Object);
         }
 
         [SetUp]
@@ -39,7 +41,7 @@ namespace Warehouse.Api.Auth.Tests.Controllers
         {
             var auth = new UserAuthenticatedDto(_user, It.IsAny<string>(), It.IsAny<string>());
             RegisterDto register = new("a", "a", "a", "a", "a", "a");
-            _authService.Setup(@as => @as.RegisterAsync(register))
+            _mediator.Setup(m => m.Send(new RegisterCommand(register), CancellationToken.None))
                 .ReturnsAsync(Result<UserAuthenticatedDto>.Success(auth));
 
             var result = await _authController.Register(register) as OkObjectResult;
@@ -52,7 +54,7 @@ namespace Warehouse.Api.Auth.Tests.Controllers
         {
             LoginDto login = new("a", "a");
             UserAuthenticatedDto authenticated = new(_user, "a", "a");
-            _authService.Setup(@as => @as.LoginAsync(login))
+            _mediator.Setup(m => m.Send(new LoginCommand(login), CancellationToken.None))
                 .ReturnsAsync(Result<UserAuthenticatedDto>.Success(authenticated));
 
             var result = await _authController.Login(login) as OkObjectResult;
@@ -66,7 +68,7 @@ namespace Warehouse.Api.Auth.Tests.Controllers
             TokenDto token = new("b");
             UserAuthenticatedDto authenticated = new(_user, "a", "a");
             ConfigureUser();
-            _authService.Setup(@as => @as.RefreshTokenAsync(_user.Id, token))
+            _mediator.Setup(m => m.Send(new RefreshTokenCommand(_user.Id, token), CancellationToken.None))
                 .ReturnsAsync(Result<UserAuthenticatedDto>.Success(authenticated));
 
             var result = await _authController.RefreshToken(token) as OkObjectResult;
@@ -78,7 +80,7 @@ namespace Warehouse.Api.Auth.Tests.Controllers
         public async Task Logout_WhenCalled_ReturnsNull()
         {
             ConfigureUser();
-            _authService.Setup(@as => @as.LogoutAsync(_user.Id))
+            _mediator.Setup(m => m.Send(new LogoutCommand(_user.Id), CancellationToken.None))
                 .ReturnsAsync(Result<object>.Success());
 
             await _authController.Logout();

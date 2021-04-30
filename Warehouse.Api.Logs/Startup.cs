@@ -1,10 +1,11 @@
 using System.Reflection;
+using MediatR;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
-using Warehouse.Api.Logs.Business;
 using Warehouse.Api.Logs.Data;
+using Warehouse.Api.Logs.Receivers;
 using Warehouse.Core.Interfaces.Repositories;
-using Warehouse.Core.Interfaces.Services;
+using StartupBase = Warehouse.Api.Base.StartupBase;
 
 namespace Warehouse.Api.Logs
 {
@@ -18,8 +19,8 @@ namespace Warehouse.Api.Logs
         {
             base.ConfigureServices(services);
             services.AddScoped<ILogRepository, LogRepository>();
-            services.AddScoped<ILogService, LogService>();
             services.AddScoped<CreatedLogHandler>();
+            services.AddMediatR(typeof(Startup).Assembly);
         }
 
         protected override Assembly GetEventHandlerAssemblies()

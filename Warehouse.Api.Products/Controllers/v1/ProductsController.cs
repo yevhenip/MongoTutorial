@@ -1,30 +1,25 @@
 ﻿using System.Threading.Tasks;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Warehouse.Api.Controllers.v1;
+using Warehouse.Api.Base;
+using Warehouse.Api.Products.Commands;
+using Warehouse.Core;
 using Warehouse.Core.DTO.Product;
-using Warehouse.Core.Interfaces.Services;
 
 namespace Warehouse.Api.Products.Controllers.v1
 {
     [Authorize]
     public class ProductsController : ApiControllerBase
     {
-        private readonly IProductService _productService;
-
-        public ProductsController(IProductService productService)
+        public ProductsController(IMediator mediator) : base(mediator)
         {
-            _productService = productService;
         }
 
-        /// <summary>
-        /// Gets all products
-        /// </summary>
-        /// <returns>List of products</returns>
         [HttpGet]
         public async Task<IActionResult> GetAllAsync()
         {
-            var result = await _productService.GetAllAsync();
+            var result = await Mediator.Send(new GetProductsCommand(_ => true));
             return Ok(result.Data);
         }
 
@@ -32,19 +27,14 @@ namespace Warehouse.Api.Products.Controllers.v1
         [HttpGet("{page:int}/{pageSize:int}")]
         public async Task<IActionResult> GetPageAsync([FromRoute] int page, [FromRoute] int pageSize)
         {
-            var result = await _productService.GetPageAsync(page, pageSize);
+            var result = await Mediator.Send(new GetProductsPageCommand(page, pageSize));
             return Ok(result.Data);
         }
 
-        /// <summary>
-        /// Gets product based on provided id
-        /// </summary>
-        /// <param name="productId"></param>
-        /// <returns>Product</returns>
         [HttpGet("{productId:guid}")]
         public async Task<IActionResult> GetAsync([FromRoute] string productId)
         {
-            var result = await _productService.GetAsync(productId);
+            var result = await Mediator.Send(new GetProductCommand(productId));
             return Ok(result.Data);
         }
 
@@ -52,47 +42,48 @@ namespace Warehouse.Api.Products.Controllers.v1
         [HttpGet("export")]
         public async Task<IActionResult> GetExportFileAsync()
         {
-            var result = await _productService.GetExportFileAsync();
+            var result = await Mediator.Send(new GetExportFileCommand());
             return File(result.Data, "text/csv", "products.csv");
         }
 
-        /// <summary>
-        /// Creates product
-        /// </summary>
-        /// <param name="product"></param>
-        /// <returns>Created product</returns>
+        [Authorize(Roles = "Admin")]
+        [HttpPost("import")]
+        public async Task<IActionResult> ImportProductsFromFileAsync([FromForm]FileModel file)
+        {
+            var result = await Mediator.Send(new ImportProductsFromFileCommand(file.File, UserName));
+            return Ok(result.Data);
+        }
+
         [Authorize(Roles = "Admin")]
         [HttpPost]
         public async Task<IActionResult> CreateAsync([FromBody] ProductModelDto product)
         {
-            var result = await _productService.CreateAsync(product, UserName);
+            var result = await Mediator.Send(new CreateProductCommand(product, UserName));
             return Ok(result.Data);
         }
 
-        /// <summary>
-        /// Updates product
-        /// </summary>
-        /// <param name="productId"></param>
-        /// <param name="product"></param>
-        /// <returns>Updated product</returns>
         [Authorize(Roles = "Admin")]
         [HttpPut("{productId:guid}")]
         public async Task<IActionResult> UpdateAsync([FromRoute] string productId,
             [FromBody] ProductModelDto product)
         {
-            var result = await _productService.UpdateAsync(productId, product, UserName);
+            var result = await Mediator.Send(new UpdateProductCommand(productId, product, UserName));
             return Ok(result.Data);
         }
 
-        /// <summary>
-        /// Deletes product
-        /// </summary>
-        /// <param name="productId"></param>
         [Authorize(Roles = "Admin")]
         [HttpDelete("{productId:guid}")]
         public async Task<IActionResult> DeleteAsync([FromRoute] string productId)
         {
-            var result = await _productService.DeleteAsync(productId);
+            var result = await Mediator.Send(new DeleteProductCommand(productId));
+            return Ok(result.Data);
+        }
+        
+        [Authorize(Roles = "Admin")]
+        [HttpGet("group")]
+        public async Task<IActionResult> GetGroupedDataAsync()
+        {
+            var result = await Mediator.Send(new GetGroupedDataCommand());
             return Ok(result.Data);
         }
     }

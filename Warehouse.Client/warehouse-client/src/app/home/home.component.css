@@ -26,3 +26,7 @@ ul {
   max-height: 32em;
   overflow-y: scroll;
 }
+
+.file-input {
+  display: none;
+}

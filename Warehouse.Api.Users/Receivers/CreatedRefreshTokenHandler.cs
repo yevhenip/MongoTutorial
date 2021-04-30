@@ -1,23 +1,22 @@
 using System.Threading;
 using System.Threading.Tasks;
 using EasyNetQ.AutoSubscribe;
+using MediatR;
+using Warehouse.Api.Base;
+using Warehouse.Api.Commands;
 using Warehouse.Core.DTO.Auth;
-using Warehouse.Core.Interfaces.Services;
 
 namespace Warehouse.Api.Users.Receivers
 {
-    public class CreatedRefreshTokenHandler : IConsumeAsync<CreatedToken>
+    public class CreatedRefreshTokenHandler : ReceiverBase, IConsumeAsync<CreatedToken>
     {
-        private readonly IUserService _userService;
-
-        public CreatedRefreshTokenHandler(IUserService userService)
+        public CreatedRefreshTokenHandler(IMediator mediator) : base(mediator)
         {
-            _userService = userService;
         }
 
         public async Task ConsumeAsync(CreatedToken message, CancellationToken cancellationToken = new())
         {
-            await _userService.CreateTokenAsync(message);
+            await Mediator.Send(new CreateRefreshTokenCommand(message.Token), cancellationToken);
         }
     }
 }

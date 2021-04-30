@@ -2,7 +2,6 @@
 using System.Net;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Warehouse.Core.Common;
 using Warehouse.Core.Interfaces.Repositories;
 
 namespace Warehouse.Api.Common

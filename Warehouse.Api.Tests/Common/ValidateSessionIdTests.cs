@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq.Expressions;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication;
@@ -8,7 +9,6 @@ using Microsoft.AspNetCore.Http;
 using Moq;
 using NUnit.Framework;
 using Warehouse.Api.Common;
-using Warehouse.Core.Common;
 using Warehouse.Core.Interfaces.Repositories;
 using Warehouse.Domain;
 
@@ -56,7 +56,7 @@ namespace Warehouse.Api.Tests.Common
                 new("Id", "a"),
                 new("SessionId", session)
             }));
-            _userRepository.Setup(ur => ur.GetAsync(u =>u.Id == _user.Id)).ReturnsAsync(_user);
+            _userRepository.Setup(ur => ur.GetAsync(It.IsAny<Expression<Func<User, bool>>>())).ReturnsAsync(_user);
             return new(
                 new DefaultHttpContext(),
                 new AuthenticationScheme("Test", "Test", typeof(IAuthenticationHandler)),

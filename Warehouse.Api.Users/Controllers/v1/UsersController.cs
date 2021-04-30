@@ -1,74 +1,61 @@
 ﻿using System.Threading.Tasks;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Warehouse.Api.Controllers.v1;
+using Warehouse.Api.Base;
+using Warehouse.Api.Users.Commands;
 using Warehouse.Core.DTO.Users;
-using Warehouse.Core.Interfaces.Services;
 
 namespace Warehouse.Api.Users.Controllers.v1
 {
     [Authorize(Roles = "Admin")]
     public class UsersController : ApiControllerBase
     {
-        private readonly IUserService _userService;
-
-        public UsersController(IUserService userService)
+        public UsersController(IMediator mediator) : base(mediator)
         {
-            _userService = userService;
         }
-        
-        /// <summary>
-        /// Gets all users
-        /// </summary>
-        /// <returns>List of users</returns>
+
         [HttpGet]
         public async Task<IActionResult> GetAllAsync()
         {
-            var result = await _userService.GetAllAsync();
-            return Ok(result.Data);
-        }
-        
-        /// <summary>
-        /// Gets user based on provided id
-        /// </summary>
-        /// <param name="userId"></param>
-        /// <returns>User</returns>
-        [HttpGet("{userId:guid}")]
-        public async Task<IActionResult> GetAsync([FromRoute] string userId)
-        {
-            var result = await _userService.GetAsync(userId);
-            return Ok(result.Data);
-        }
-        
-        
-        [HttpGet("{page:int}/{pageSize:int}")]
-        public async Task<IActionResult> GetPageAsync([FromRoute] int page, [FromRoute] int pageSize)
-        {
-            var result = await _userService.GetPageAsync(page, pageSize);
-            return Ok(result.Data);
-        }
-        
-        /// <summary>
-        /// Updates product
-        /// </summary>
-        /// <param name="userId"></param>
-        /// <param name="user"></param>
-        /// <returns>Updated user</returns>
-        [HttpPut("{userId:guid}")]
-        public async Task<IActionResult> UpdateAsync([FromRoute] string userId, UserModelDto user)
-        {
-            var result = await _userService.UpdateAsync(userId, user, UserName);
+            var result = await Mediator.Send(new GetUsersCommand(_ => true));
             return Ok(result.Data);
         }
 
-        /// <summary>
-        /// Deletes user
-        /// </summary>
-        /// <param name="userId"></param>
+        [HttpGet("{userId:guid}")]
+        public async Task<IActionResult> GetAsync([FromRoute] string userId)
+        {
+            var result = await Mediator.Send(new GetUserCommand(userId));
+            return Ok(result.Data);
+        }
+
+
+        [HttpGet("{page:int}/{pageSize:int}")]
+        public async Task<IActionResult> GetPageAsync([FromRoute] int page, [FromRoute] int pageSize)
+        {
+            var result = await Mediator.Send(new GetUsersPageCommand(page, pageSize));
+            return Ok(result.Data);
+        }
+
+        [Authorize(Roles = "Dungeon master")]
+        [HttpPost("{userId:guid}")]
+        public async Task<IActionResult> MakeAdminAsync([FromRoute] string userId)
+        {
+            var result = await Mediator.Send(new MakeAdminUserCommand(userId));
+            return Ok(result.Data);
+        }
+        
+        [HttpPut("{userId:guid}")]
+        public async Task<IActionResult> UpdateAsync([FromRoute] string userId, UserModelDto user)
+        {
+            var result = await Mediator.Send(new UpdateUserCommand(userId, user, UserName));
+            return Ok(result.Data);
+        }
+
         [HttpDelete("{userId:guid}")]
         public async Task<IActionResult> DeleteAsync([FromRoute] string userId)
         {
-            var result = await _userService.DeleteAsync(userId);
+            var result = await Mediator.Send(new DeleteUserCommand(userId));
             return Ok(result.Data);
         }
     }
