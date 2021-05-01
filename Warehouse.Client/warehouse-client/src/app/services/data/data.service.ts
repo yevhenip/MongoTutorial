@@ -42,4 +42,8 @@ export class DataService {
   getCount() {
     return this.http.get(this.url + 'count', this.options).toPromise();
   }
+
+  groupBy(){
+    return this.http.get(this.url + 'group', this.options).toPromise();
+  }
 }

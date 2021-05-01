@@ -24,6 +24,7 @@ import {DataService} from "./services/data/data.service";
 import {UserFormComponent} from "./user-form/user-form.component";
 import {UserPanelComponent} from "./user-panel/user-panel.component";
 import { LogoutConfirmComponent } from './logout-confirm/logout-confirm.component';
+import { GroupDataComponent } from './group-data/group-data.component';
 
 @NgModule({
   declarations: [
@@ -40,7 +41,8 @@ import { LogoutConfirmComponent } from './logout-confirm/logout-confirm.componen
     ManufacturerFormComponent,
     UserFormComponent,
     CustomerFormComponent,
-    LogoutConfirmComponent
+    LogoutConfirmComponent,
+    GroupDataComponent
   ],
   imports: [
     BrowserModule,

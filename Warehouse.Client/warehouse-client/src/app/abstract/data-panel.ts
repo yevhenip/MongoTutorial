@@ -3,6 +3,7 @@ import {Component, ViewChild} from "@angular/core";
 import {MatDialog} from "@angular/material/dialog";
 import {MatPaginator} from "@angular/material/paginator";
 import {MatTableDataSource} from "@angular/material/table";
+import { GroupDataComponent } from "../group-data/group-data.component";
 import {Log} from "../models/log";
 import {DataService} from "../services/data/data.service";
 import {LogService} from "../services/data/log/log.service";
@@ -71,6 +72,13 @@ export abstract class DataPanel {
         this.dataSource._updateChangeSubscription();
         this.addLog('edited ' + type, editResult);
       }
+    });
+  }
+
+  async openDialogForGrouping(dialogItem: MatDialog){
+    let groupedItems = await this.service.groupBy();
+    let dialog = dialogItem.open(GroupDataComponent, {
+      data: groupedItems
     });
   }
 

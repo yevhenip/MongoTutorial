@@ -52,21 +52,22 @@ export class HomeComponent extends DataPanel implements OnInit {
 
   async onFileSelected(event: any) {
     const file: File = event.target.files[0];
-    if (file) {
 
-      this.fileName = file.name;
+    this.fileName = file.name;
+    const formData = new FormData();
+    formData.append("file", file);
 
-      const formData = new FormData();
-      formData.append("file", file);
-
-      let response = await this.productService.import(formData);
-      if (response.error) {
-        let message = response.error.text ? response.error.text : response.error.errors[Object.keys(response.error.errors)[0]];
-        let errors = document.getElementById('errors');
-        // @ts-ignore
-        errors?.innerText = "";
-        errors?.append(message);
-      }
+    let response = await this.productService.import(formData);
+    if (response.error) {
+      let message = response.error.text ? response.error.text : response.error.errors[Object.keys(response.error.errors)[0]];
+      let errors = document.getElementById('errors');
+      // @ts-ignore
+      errors?.innerText = "";
+      errors?.append(message);
     }
+  }
+
+  async openDialogForGrouping() {
+    super.openDialogForGrouping(this.dialog);
   }
 }
