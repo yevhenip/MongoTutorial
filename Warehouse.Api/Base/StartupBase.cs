@@ -1,4 +1,5 @@
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Text.Json;
 using EasyNetQ;
@@ -9,6 +10,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.OpenApi.Models;
 using MongoDB.Driver;
 using Warehouse.Api.Business;
 using Warehouse.Api.Common;
@@ -27,6 +29,7 @@ namespace Warehouse.Api.Base
     public abstract class StartupBase
     {
         private IConfiguration Configuration { get; }
+        private static string DirectoryName => Directory.GetCurrentDirectory().Split('\\').Last();
         private const string DefaultCors = "default";
 
         private IWebHostEnvironment Environment { get; }
@@ -62,6 +65,9 @@ namespace Warehouse.Api.Base
                 option.Configuration = Configuration["Cache:Configuration"];
                 option.InstanceName = Configuration["Cache:InstanceName"];
             });
+
+            services.AddSwaggerGen(c => c.SwaggerDoc("v1",
+                new OpenApiInfo {Title = DirectoryName, Version = "v1"}));
 
             services.AddSingleton<IMongoClient, MongoClient>(_ =>
                 new MongoClient(Configuration["Data:ConnectionString"]));
@@ -114,6 +120,12 @@ namespace Warehouse.Api.Base
             app.UseAuthorization();
             app.UseCors(DefaultCors);
             app.UseEndpoints(endpoints => { endpoints.MapControllers(); });
+
+            app.UseSwagger();
+            app.UseSwaggerUI(s =>
+            {
+                s.SwaggerEndpoint("/swagger/v1/swagger.json", DirectoryName);
+            });
         }
     }
 }
