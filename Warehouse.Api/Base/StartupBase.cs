@@ -73,7 +73,6 @@ namespace Warehouse.Api.Base
                 new MongoClient(Configuration["Data:ConnectionString"]));
 
             services.AddScoped<ValidateTokenSessionId>();
-            services.AddScoped<IFileService, FileService>();
             services.AddScoped<ICacheService, CacheService>();
             services.AddScoped<ISender, Sender>();
             services.AddScoped<IUserRepository, UserRepository>();

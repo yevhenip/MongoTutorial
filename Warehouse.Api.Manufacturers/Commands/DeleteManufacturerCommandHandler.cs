@@ -17,15 +17,13 @@ namespace Warehouse.Api.Manufacturers.Commands
         private readonly ISender _sender;
         private readonly IManufacturerRepository _manufacturerRepository;
         private readonly ICacheService _cacheService;
-        private readonly IFileService _fileService;
 
         public DeleteManufacturerCommandHandler(ISender sender, IManufacturerRepository manufacturerRepository,
-            ICacheService cacheService, IFileService fileService)
+            ICacheService cacheService)
         {
             _sender = sender;
             _manufacturerRepository = manufacturerRepository;
             _cacheService = cacheService;
-            _fileService = fileService;
         }
 
         public async Task<Result<object>> Handle(DeleteManufacturerCommand request, CancellationToken cancellationToken)
@@ -39,7 +37,6 @@ namespace Warehouse.Api.Manufacturers.Commands
 
             await _sender.PublishAsync(new DeletedManufacturer(request.Id), cancellationToken);
             await _manufacturerRepository.DeleteAsync(m => m.Id == request.Id);
-            await _fileService.DeleteFileAsync(CommandExtensions.ManufacturerFolderPath, cacheKey);
 
             await _cacheService.RemoveAsync(cacheKey);
 

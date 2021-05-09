@@ -19,16 +19,14 @@ namespace Warehouse.Api.Products.Commands
     {
         private readonly IMapper _mapper;
         private readonly ICacheService _cacheService;
-        private readonly IFileService _fileService;
         private readonly IProductRepository _productRepository;
         private readonly CacheProductSettings _productSettings;
 
-        public GetProductCommandHandler(IMapper mapper, ICacheService cacheService, IFileService fileService,
+        public GetProductCommandHandler(IMapper mapper, ICacheService cacheService,
             IProductRepository productRepository, IOptions<CacheProductSettings> productSettings)
         {
             _mapper = mapper;
             _cacheService = cacheService;
-            _fileService = fileService;
             _productRepository = productRepository;
             _productSettings = productSettings.Value;
         }
@@ -48,16 +46,8 @@ namespace Warehouse.Api.Products.Commands
 
             var productInDb = await _productRepository.GetAsync(p => p.Id == request.Id);
 
-            if (productInDb is not null)
-            {
-                product = _mapper.Map<ProductDto>(productInDb);
-                await _cacheService.SetCacheAsync(cacheKey, productInDb, _productSettings);
-
-                return Result<ProductDto>.Success(product);
-            }
-
-            productInDb = await _fileService.ReadFromFileAsync<Product>(CommandExtensions.ProductFolderPath, cacheKey);
             productInDb.CheckForNull();
+            await _cacheService.SetCacheAsync(cacheKey, productInDb, _productSettings);
 
             product = _mapper.Map<ProductDto>(productInDb);
 

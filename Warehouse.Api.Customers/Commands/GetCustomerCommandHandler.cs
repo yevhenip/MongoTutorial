@@ -19,16 +19,14 @@ namespace Warehouse.Api.Customers.Commands
     {
         private readonly IMapper _mapper;
         private readonly ICacheService _cacheService;
-        private readonly IFileService _fileService;
         private readonly ICustomerRepository _customerRepository;
         private readonly CacheCustomerSettings _customerSettings;
 
-        public GetCustomerCommandHandler(IMapper mapper, ICacheService cacheService, IFileService fileService,
+        public GetCustomerCommandHandler(IMapper mapper, ICacheService cacheService,
             ICustomerRepository customerRepository, IOptions<CacheCustomerSettings> customerSettings)
         {
             _mapper = mapper;
             _cacheService = cacheService;
-            _fileService = fileService;
             _customerRepository = customerRepository;
             _customerSettings = customerSettings.Value;
         }
@@ -47,17 +45,9 @@ namespace Warehouse.Api.Customers.Commands
             }
 
             var customerInDb = await _customerRepository.GetAsync(c => c.Id == request.Id);
-            if (customerInDb is not null)
-            {
-                await
-                    _cacheService.SetCacheAsync(cacheKey, customerInDb, _customerSettings);
-                customer = _mapper.Map<CustomerDto>(customerInDb);
 
-                return Result<CustomerDto>.Success(customer);
-            }
-
-            customerInDb = await _fileService.ReadFromFileAsync<Customer>(CommandExtensions.CustomerFolderPath, cacheKey);
             customerInDb.CheckForNull();
+            await _cacheService.SetCacheAsync(cacheKey, customerInDb, _customerSettings);
 
             customer = _mapper.Map<CustomerDto>(customerInDb);
 

@@ -14,11 +14,4 @@
     <ItemGroup>
       <ProjectReference Include="..\Warehouse.Core\Warehouse.Core.csproj" />
     </ItemGroup>
-
-    <ItemGroup>
-      <Folder Include="wwwroot\Customers" />
-      <Folder Include="wwwroot\Manufacturers" />
-      <Folder Include="wwwroot\Products" />
-      <Folder Include="wwwroot\Users" />
-    </ItemGroup>
 </Project>

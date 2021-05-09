@@ -6,7 +6,6 @@ using AutoMapper;
 using MediatR;
 using Microsoft.Extensions.Options;
 using Warehouse.Api.Common;
-using Warehouse.Api.Extensions;
 using Warehouse.Core.DTO.Users;
 using Warehouse.Core.Interfaces.Repositories;
 using Warehouse.Core.Interfaces.Services;
@@ -21,16 +20,14 @@ namespace Warehouse.Api.Users.Commands
     {
         private readonly IMapper _mapper;
         private readonly ICacheService _cacheService;
-        private readonly IFileService _fileService;
         private readonly IUserRepository _userRepository;
         private readonly CacheUserSettings _userSettings;
 
-        public CreateUserCommandHandler(IMapper mapper, ICacheService cacheService, IFileService fileService, 
-            IOptions<CacheUserSettings> userSettings, IUserRepository userRepository)
+        public CreateUserCommandHandler(IMapper mapper, ICacheService cacheService, IUserRepository userRepository,
+            IOptions<CacheUserSettings> userSettings)
         {
             _mapper = mapper;
             _cacheService = cacheService;
-            _fileService = fileService;
             _userRepository = userRepository;
             _userSettings = userSettings.Value;
         }
@@ -44,7 +41,6 @@ namespace Warehouse.Api.Users.Commands
 
             var cacheKey = $"User-{request.User.Id}";
             await _cacheService.SetCacheAsync(cacheKey, request.User, _userSettings);
-            await _fileService.WriteToFileAsync(request.User, CommandExtensions.UserFolderPath, cacheKey);
 
             return Result<UserDto>.Success(userFromDb);
         }

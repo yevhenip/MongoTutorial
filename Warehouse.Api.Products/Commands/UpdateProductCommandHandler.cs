@@ -26,19 +26,17 @@ namespace Warehouse.Api.Products.Commands
         private readonly IMapper _mapper;
         private readonly ISender _sender;
         private readonly ICacheService _cacheService;
-        private readonly IFileService _fileService;
         private readonly IProductRepository _productRepository;
         private readonly IProductService _productService;
         private readonly CacheProductSettings _productSettings;
 
         public UpdateProductCommandHandler(IMapper mapper, ISender sender, ICacheService cacheService,
-            IFileService fileService, IProductRepository productRepository, IProductService productService,
+            IProductRepository productRepository, IProductService productService,
             IOptions<CacheProductSettings> productSettings)
         {
             _mapper = mapper;
             _sender = sender;
             _cacheService = cacheService;
-            _fileService = fileService;
             _productRepository = productRepository;
             _productService = productService;
             _productSettings = productSettings.Value;
@@ -50,9 +48,7 @@ namespace Warehouse.Api.Products.Commands
             Product productInDb;
             if (!await _cacheService.IsExistsAsync(cacheKey))
             {
-                productInDb = await _productRepository.GetAsync(p => p.Id == request.ProductId) ??
-                              await _fileService.ReadFromFileAsync<Product>(CommandExtensions.ProductFolderPath,
-                                  cacheKey);
+                productInDb = await _productRepository.GetAsync(p => p.Id == request.ProductId);
 
                 productInDb.CheckForNull();
             }
@@ -64,9 +60,7 @@ namespace Warehouse.Api.Products.Commands
             LogDto log = new(Guid.NewGuid().ToString(), request.UserName, "edited product",
                 JsonSerializer.Serialize(result, CommandExtensions.JsonSerializerOptions), DateTime.UtcNow);
 
-            await
-                _cacheService.SetCacheAsync(cacheKey, productInDb, _productSettings);
-            await _fileService.WriteToFileAsync(productInDb, CommandExtensions.ProductFolderPath, cacheKey);
+            await _cacheService.SetCacheAsync(cacheKey, productInDb, _productSettings);
             await _sender.PublishAsync(log, cancellationToken);
             await _productRepository.UpdateAsync(p => p.Id == productInDb.Id, productInDb);
             return Result<ProductDto>.Success(result);

@@ -24,19 +24,17 @@ namespace Warehouse.Api.Products.Commands
         private readonly IMapper _mapper;
         private readonly ISender _sender;
         private readonly ICacheService _cacheService;
-        private readonly IFileService _fileService;
         private readonly IProductRepository _productRepository;
         private readonly CacheProductSettings _productSettings;
         private readonly IProductService _productService;
 
         public CreateProductCommandHandler(IMapper mapper, ISender sender, ICacheService cacheService,
-            IFileService fileService, IProductRepository productRepository, IProductService productService,
+            IProductRepository productRepository, IProductService productService,
             IOptions<CacheProductSettings> productSettings)
         {
             _mapper = mapper;
             _sender = sender;
             _cacheService = cacheService;
-            _fileService = fileService;
             _productRepository = productRepository;
             _productSettings = productSettings.Value;
             _productService = productService;
@@ -50,7 +48,6 @@ namespace Warehouse.Api.Products.Commands
 
             var cacheKey = $"Product-{productToDb.Id}";
             await _cacheService.SetCacheAsync(cacheKey, productToDb, _productSettings);
-            await _fileService.WriteToFileAsync(productToDb, CommandExtensions.ProductFolderPath, cacheKey);
 
             var result = _mapper.Map<ProductDto>(productToDb);
             LogDto log = new(Guid.NewGuid().ToString(), request.UserName, "added product",

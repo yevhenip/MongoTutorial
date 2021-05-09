@@ -23,21 +23,20 @@ namespace Warehouse.Api.Customers.Commands
     {
         private readonly IMapper _mapper;
         private readonly ICacheService _cacheService;
-        private readonly IFileService _fileService;
         private readonly ICustomerRepository _customerRepository;
         private readonly ISender _sender;
-        private readonly CacheCustomerSettings _customerSettings;
 
-        public CreateCustomerCommandHandler(IMapper mapper, ICacheService cacheService, IFileService fileService,
-            ICustomerRepository customerRepository, IOptions<CacheCustomerSettings> customerSettings, ISender sender)
+        public CreateCustomerCommandHandler(IMapper mapper, ISender sender, ICacheService cacheService,
+            ICustomerRepository customerRepository, IOptions<CacheCustomerSettings> customerSettings)
         {
             _mapper = mapper;
             _cacheService = cacheService;
-            _fileService = fileService;
             _customerRepository = customerRepository;
             _sender = sender;
             _customerSettings = customerSettings.Value;
         }
+
+        private readonly CacheCustomerSettings _customerSettings;
 
         public async Task<Result<CustomerDto>> Handle(CreateCustomerCommand request,
             CancellationToken cancellationToken)
@@ -51,7 +50,6 @@ namespace Warehouse.Api.Customers.Commands
                     CommandExtensions.JsonSerializerOptions), DateTime.UtcNow);
 
             await _cacheService.SetCacheAsync(cacheKey, customerToDb, _customerSettings);
-            await _fileService.WriteToFileAsync(customerToDb, CommandExtensions.CustomerFolderPath, cacheKey);
 
             await _customerRepository.CreateAsync(customerToDb);
             await _sender.PublishAsync(new CreatedCustomer(customerToDb), cancellationToken);

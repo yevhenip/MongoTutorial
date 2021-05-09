@@ -27,18 +27,15 @@ namespace Warehouse.Api.Manufacturers.Commands
         private readonly IManufacturerRepository _manufacturerRepository;
         private readonly ICacheService _cacheService;
         private readonly IMapper _mapper;
-        private readonly IFileService _fileService;
 
-        public CreateManufacturerCommandHandler(IFileService fileService, ISender sender, ICacheService cacheService, 
-            IManufacturerRepository manufacturerRepository, IOptions<CacheManufacturerSettings> manufacturerSettings,
-            IMapper mapper)
+        public CreateManufacturerCommandHandler(ISender sender, ICacheService cacheService, IMapper mapper,
+            IManufacturerRepository manufacturerRepository, IOptions<CacheManufacturerSettings> manufacturerSettings)
         {
             _manufacturerSettings = manufacturerSettings.Value;
             _sender = sender;
             _manufacturerRepository = manufacturerRepository;
             _cacheService = cacheService;
             _mapper = mapper;
-            _fileService = fileService;
         }
 
         public async Task<Result<ManufacturerDto>> Handle(CreateManufacturerCommand request,
@@ -51,9 +48,7 @@ namespace Warehouse.Api.Manufacturers.Commands
             LogDto log = new(Guid.NewGuid().ToString(), request.UserName, "added manufacturer",
                 JsonSerializer.Serialize(manufacturerDto, CommandExtensions.JsonSerializerOptions), DateTime.UtcNow);
 
-            await
-                _cacheService.SetCacheAsync(cacheKey, manufacturerToDb, _manufacturerSettings);
-            await _fileService.WriteToFileAsync(manufacturerToDb, CommandExtensions.ManufacturerFolderPath, cacheKey);
+            await _cacheService.SetCacheAsync(cacheKey, manufacturerToDb, _manufacturerSettings);
 
             await _manufacturerRepository.CreateAsync(manufacturerToDb);
             await _sender.PublishAsync(new CreatedManufacturer(manufacturerToDb), cancellationToken);

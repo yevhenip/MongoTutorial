@@ -13,14 +13,11 @@ namespace Warehouse.Api.Products.Commands
     public class DeleteProductCommandHandler : IRequestHandler<DeleteProductCommand, Result<object>>
     {
         private readonly ICacheService _cacheService;
-        private readonly IFileService _fileService;
         private readonly IProductRepository _productRepository;
 
-        public DeleteProductCommandHandler(ICacheService cacheService, IFileService fileService,
-            IProductRepository productRepository)
+        public DeleteProductCommandHandler(ICacheService cacheService, IProductRepository productRepository)
         {
             _cacheService = cacheService;
-            _fileService = fileService;
             _productRepository = productRepository;
         }
 
@@ -35,7 +32,6 @@ namespace Warehouse.Api.Products.Commands
 
             await _productRepository.DeleteAsync(p => p.Id == request.Id);
             await _cacheService.RemoveAsync(cacheKey);
-            await _fileService.DeleteFileAsync(CommandExtensions.ProductFolderPath, cacheKey);
 
             return Result<object>.Success();
         }

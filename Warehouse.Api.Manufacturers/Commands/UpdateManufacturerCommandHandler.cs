@@ -27,18 +27,15 @@ namespace Warehouse.Api.Manufacturers.Commands
         private readonly IManufacturerRepository _manufacturerRepository;
         private readonly ICacheService _cacheService;
         private readonly IMapper _mapper;
-        private readonly IFileService _fileService;
 
         public UpdateManufacturerCommandHandler(IOptions<CacheManufacturerSettings> manufacturerSettings,
-            ISender sender, IManufacturerRepository manufacturerRepository, ICacheService cacheService, IMapper mapper,
-            IFileService fileService)
+            ISender sender, IManufacturerRepository manufacturerRepository, ICacheService cacheService, IMapper mapper)
         {
             _manufacturerSettings = manufacturerSettings.Value;
             _sender = sender;
             _manufacturerRepository = manufacturerRepository;
             _cacheService = cacheService;
             _mapper = mapper;
-            _fileService = fileService;
         }
 
         public async Task<Result<ManufacturerDto>> Handle(UpdateManufacturerCommand request,
@@ -48,9 +45,7 @@ namespace Warehouse.Api.Manufacturers.Commands
             Manufacturer manufacturerInDb;
             if (!await _cacheService.IsExistsAsync(cacheKey))
             {
-                manufacturerInDb = await _manufacturerRepository.GetAsync(m => m.Id == request.ManufacturerId) ??
-                                   await _fileService.ReadFromFileAsync<Manufacturer>(
-                                       CommandExtensions.ManufacturerFolderPath, cacheKey);
+                manufacturerInDb = await _manufacturerRepository.GetAsync(m => m.Id == request.ManufacturerId);
                 manufacturerInDb.CheckForNull();
             }
 
@@ -63,7 +58,6 @@ namespace Warehouse.Api.Manufacturers.Commands
             await _sender.PublishAsync(new UpdatedManufacturer(manufacturerInDb), cancellationToken);
             await _sender.PublishAsync(log, cancellationToken);
             await _cacheService.UpdateAsync(cacheKey, manufacturerInDb, _manufacturerSettings);
-            await _fileService.WriteToFileAsync(manufacturerInDb, CommandExtensions.ManufacturerFolderPath, cacheKey);
 
             return Result<ManufacturerDto>.Success(manufacturerDto);
         }

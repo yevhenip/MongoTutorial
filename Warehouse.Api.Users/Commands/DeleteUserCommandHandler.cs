@@ -15,16 +15,14 @@ namespace Warehouse.Api.Users.Commands
     {
         private readonly ISender _sender;
         private readonly ICacheService _cacheService;
-        private readonly IFileService _fileService;
         private readonly IUserRepository _userRepository;
         private readonly IRefreshTokenRepository _tokenRepository;
 
-        public DeleteUserCommandHandler(ISender sender, ICacheService cacheService, IFileService fileService, 
-            IUserRepository userRepository, IRefreshTokenRepository tokenRepository)
+        public DeleteUserCommandHandler(ISender sender, ICacheService cacheService, IUserRepository userRepository,
+            IRefreshTokenRepository tokenRepository)
         {
             _sender = sender;
             _cacheService = cacheService;
-            _fileService = fileService;
             _userRepository = userRepository;
             _tokenRepository = tokenRepository;
         }
@@ -47,7 +45,6 @@ namespace Warehouse.Api.Users.Commands
 
             await _userRepository.DeleteAsync(u => u.Id == request.UserId);
             await _cacheService.RemoveAsync(cacheKey);
-            await _fileService.DeleteFileAsync(CommandExtensions.UserFolderPath, cacheKey);
 
             return Result<object>.Success();
         }

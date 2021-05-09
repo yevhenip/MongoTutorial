@@ -15,15 +15,13 @@ namespace Warehouse.Api.Customers.Commands
     public class DeleteCustomerCommandHandler : IRequestHandler<DeleteCustomerCommand, Result<object>>
     {
         private readonly ICacheService _cacheService;
-        private readonly IFileService _fileService;
         private readonly ICustomerRepository _customerRepository;
         private readonly ISender _sender;
 
-        public DeleteCustomerCommandHandler(ICacheService cacheService, IFileService fileService,
-            ICustomerRepository customerRepository, ISender sender)
+        public DeleteCustomerCommandHandler(ICacheService cacheService, ISender sender,
+            ICustomerRepository customerRepository)
         {
             _cacheService = cacheService;
-            _fileService = fileService;
             _customerRepository = customerRepository;
             _sender = sender;
         }
@@ -39,7 +37,6 @@ namespace Warehouse.Api.Customers.Commands
 
             await _sender.PublishAsync(new DeletedCustomer(request.Id), cancellationToken);
             await _cacheService.RemoveAsync(cacheKey);
-            await _fileService.DeleteFileAsync(CommandExtensions.CustomerFolderPath, cacheKey);
             await _customerRepository.DeleteAsync(c => c.Id == request.Id);
 
             return Result<object>.Success();

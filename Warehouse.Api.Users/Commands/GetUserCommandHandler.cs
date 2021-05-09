@@ -19,16 +19,14 @@ namespace Warehouse.Api.Users.Commands
     {
         private readonly IMapper _mapper;
         private readonly ICacheService _cacheService;
-        private readonly IFileService _fileService;
         private readonly IUserRepository _userRepository;
         private readonly CacheUserSettings _userSettings;
 
-        public GetUserCommandHandler(IMapper mapper, ICacheService cacheService, IFileService fileService, 
-            IOptions<CacheUserSettings> userSettings, IUserRepository userRepository)
+        public GetUserCommandHandler(IMapper mapper, ICacheService cacheService, IUserRepository userRepository,
+            IOptions<CacheUserSettings> userSettings)
         {
             _mapper = mapper;
             _cacheService = cacheService;
-            _fileService = fileService;
             _userRepository = userRepository;
             _userSettings = userSettings.Value;
         }
@@ -46,17 +44,9 @@ namespace Warehouse.Api.Users.Commands
             }
 
             var userInDb = await _userRepository.GetAsync(u => u.Id == request.Id);
-            if (userInDb is not null)
-            {
-                await _cacheService.SetCacheAsync(cacheKey, userInDb, _userSettings);
-                user = _mapper.Map<UserDto>(userInDb);
 
-                return Result<UserDto>.Success(user);
-            }
-
-            userInDb = await _fileService.ReadFromFileAsync<User>(CommandExtensions.UserFolderPath, cacheKey);
             userInDb.CheckForNull();
-
+            await _cacheService.SetCacheAsync(cacheKey, userInDb, _userSettings);
             user = _mapper.Map<UserDto>(userInDb);
 
             return Result<UserDto>.Success(user);

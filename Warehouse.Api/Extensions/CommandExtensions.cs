@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
-using System.IO;
 using System.Linq;
 using System.Net;
 using System.Security.Claims;
@@ -17,15 +16,6 @@ namespace Warehouse.Api.Extensions
 {
     public static class CommandExtensions
     {
-        public static string ManufacturerFolderPath =>
-            Directory.GetCurrentDirectory() + @"\..\Warehouse.Api\wwwroot\Manufacturers\";
-        public static string CustomerFolderPath =>
-            Directory.GetCurrentDirectory() + @"\..\Warehouse.Api\wwwroot\Customers\";
-        public static string ProductFolderPath =>
-            Directory.GetCurrentDirectory() + @"\..\Warehouse.Api\wwwroot\Products\";
-        public static string UserFolderPath =>
-            Directory.GetCurrentDirectory() + @"\..\Warehouse.Api\wwwroot\Users\";
-
         public static JsonSerializerOptions JsonSerializerOptions =>
             new() {PropertyNamingPolicy = JsonNamingPolicy.CamelCase};
         

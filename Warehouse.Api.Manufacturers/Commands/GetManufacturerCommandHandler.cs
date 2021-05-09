@@ -21,16 +21,14 @@ namespace Warehouse.Api.Manufacturers.Commands
         private readonly IManufacturerRepository _manufacturerRepository;
         private readonly ICacheService _cacheService;
         private readonly IMapper _mapper;
-        private readonly IFileService _fileService;
 
-        public GetManufacturerCommandHandler(IMapper mapper, IFileService fileService, ICacheService cacheService,
+        public GetManufacturerCommandHandler(IMapper mapper, ICacheService cacheService,
             IOptions<CacheManufacturerSettings> manufacturerSettings, IManufacturerRepository manufacturerRepository)
         {
             _manufacturerSettings = manufacturerSettings.Value;
             _manufacturerRepository = manufacturerRepository;
             _cacheService = cacheService;
             _mapper = mapper;
-            _fileService = fileService;
         }
 
         public async Task<Result<ManufacturerDto>> Handle(GetManufacturerCommand request,
@@ -48,17 +46,8 @@ namespace Warehouse.Api.Manufacturers.Commands
             }
 
             var manufacturerInDb = await _manufacturerRepository.GetAsync(m => m.Id == request.Id);
-            if (manufacturerInDb is not null)
-            {
-                await _cacheService.SetCacheAsync(cacheKey, manufacturerInDb, _manufacturerSettings);
-                manufacturer = _mapper.Map<ManufacturerDto>(manufacturerInDb);
-
-                return Result<ManufacturerDto>.Success(manufacturer);
-            }
-
-            manufacturerInDb =
-                await _fileService.ReadFromFileAsync<Manufacturer>(CommandExtensions.ManufacturerFolderPath, cacheKey);
             manufacturerInDb.CheckForNull();
+            await _cacheService.SetCacheAsync(cacheKey, manufacturerInDb, _manufacturerSettings);
 
             manufacturer = _mapper.Map<ManufacturerDto>(manufacturerInDb);
 
