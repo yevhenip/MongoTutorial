@@ -2,21 +2,23 @@ using System.Threading;
 using System.Threading.Tasks;
 using EasyNetQ.AutoSubscribe;
 using MediatR;
-using Warehouse.Api.Base;
 using Warehouse.Api.Products.Commands;
 using Warehouse.Core.DTO.Customer;
 
 namespace Warehouse.Api.Products.Receivers
 {
-    public class DeletedCustomerHandler : ReceiverBase, IConsumeAsync<DeletedCustomer>
+    public class DeletedCustomerHandler : IConsumeAsync<DeletedCustomer>
     {
-        public DeletedCustomerHandler(IMediator mediator) : base(mediator)
+        private readonly IMediator _mediator;
+
+        public DeletedCustomerHandler(IMediator mediator)
         {
+            _mediator = mediator;
         }
 
         public async Task ConsumeAsync(DeletedCustomer message, CancellationToken cancellationToken = new())
         {
-            await Mediator.Send(new DeleteCustomerFromProductCommand(message.Id), cancellationToken);
+            await _mediator.Send(new DeleteCustomerFromProductCommand(message.Id), cancellationToken);
         }
     }
 }
