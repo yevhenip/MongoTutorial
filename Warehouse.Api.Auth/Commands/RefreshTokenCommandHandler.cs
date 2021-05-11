@@ -49,8 +49,8 @@ namespace Warehouse.Api.Auth.Commands
             refreshTokenInDb.CheckForNull();
             IsValid(refreshTokenInDb);
 
-            var jwtToken = CommandExtensions.GenerateJwtToken(userDto, _tokenConfiguration);
-            var tokenString = CommandExtensions.GenerateRefreshToken();
+            var jwtToken = JwtExtensions.GenerateJwtToken(userDto, _tokenConfiguration);
+            var tokenString = JwtExtensions.GenerateRefreshToken();
             var userInDb = _mapper.Map<User>(user);
             var refreshToken = new RefreshToken
             {

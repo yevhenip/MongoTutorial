@@ -49,8 +49,8 @@ namespace Warehouse.Api.Auth.Commands
             var hashedPassword = _hasher.HashPassword(user, request.Register.Password);
             user = user with {PasswordHash = hashedPassword, Roles = new List<string> {"User"}};
             var userToDb = _mapper.Map<User>(user);
-            var jwtToken = CommandExtensions.GenerateJwtToken(user, _tokenConfiguration);
-            var tokenString = CommandExtensions.GenerateRefreshToken();
+            var jwtToken = JwtExtensions.GenerateJwtToken(user, _tokenConfiguration);
+            var tokenString = JwtExtensions.GenerateRefreshToken();
             var refreshToken = new RefreshToken
             {
                 Id = Guid.NewGuid().ToString(),
