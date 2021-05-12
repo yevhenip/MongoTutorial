@@ -66,8 +66,18 @@ namespace Warehouse.Api.Base
                 option.InstanceName = Configuration["Cache:InstanceName"];
             });
 
-            services.AddSwaggerGen(c => c.SwaggerDoc("v1",
-                new OpenApiInfo {Title = DirectoryName, Version = "v1"}));
+            services.AddSwaggerGen(c =>
+            {
+                c.SwaggerDoc("v1", new OpenApiInfo {Title = DirectoryName, Version = "v1"});
+                c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+                {
+                    Description =
+                        "JWT Authorization header using the Bearer scheme. Example: \"Authorization: Bearer {token}\"",
+                    Name = "Authorization",
+                    In = ParameterLocation.Header,
+                    Type = SecuritySchemeType.ApiKey
+                });
+            });
 
             services.AddSingleton<IMongoClient, MongoClient>(_ =>
                 new MongoClient(Configuration["Data:ConnectionString"]));
@@ -121,10 +131,7 @@ namespace Warehouse.Api.Base
             app.UseEndpoints(endpoints => { endpoints.MapControllers(); });
 
             app.UseSwagger();
-            app.UseSwaggerUI(s =>
-            {
-                s.SwaggerEndpoint("/swagger/v1/swagger.json", DirectoryName);
-            });
+            app.UseSwaggerUI(s => { s.SwaggerEndpoint("/swagger/v1/swagger.json", DirectoryName); });
         }
     }
 }

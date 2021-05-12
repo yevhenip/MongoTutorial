@@ -39,7 +39,7 @@ namespace Warehouse.Api.Products.Services
             var customerInDb =
                 await _customerRepository.GetAsync(c => c.Id == product.CustomerId);
 
-            if (customerInDb == null && product.CustomerId != string.Empty && product.CustomerId != "none")
+            if (customerInDb is null && product.CustomerId is not null)
             {
                 throw Result<ProductDto>.Failure("customerId",
                     $"Unexisting customer id", HttpStatusCode.BadRequest);
